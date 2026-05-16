@@ -102,3 +102,25 @@ export async function getSceneData(sceneId) {
         throw error;
     }
 }
+
+/**
+ * 发布场景
+ * @param {string} sceneId
+ * @returns {Promise<{slug: string, viewUrl: string}>}
+ */
+export async function publishScene(sceneId) {
+    const response = await fetch(`${API_BASE_URL}/scene/${sceneId}/publish`, { method: 'POST' });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message);
+    return { slug: data.slug, viewUrl: data.viewUrl };
+}
+
+/**
+ * 取消发布场景
+ * @param {string} sceneId
+ */
+export async function unpublishScene(sceneId) {
+    const response = await fetch(`${API_BASE_URL}/scene/${sceneId}/unpublish`, { method: 'POST' });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message);
+}

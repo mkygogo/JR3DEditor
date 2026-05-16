@@ -17,6 +17,7 @@
       >
         <div class="scene-preview">
           <span class="scene-icon">🏝️</span>
+          <span v-if="scene.published" class="published-badge">已发布</span>
         </div>
         <div class="scene-info">
           <div class="scene-name" :title="scene.name">
@@ -316,10 +317,22 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .scene-icon {
   font-size: 48px;
+}
+
+.published-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #2ea043;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .scene-info {

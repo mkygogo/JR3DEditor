@@ -304,3 +304,72 @@ exports.generateBaseMapHandler = async (req, res) => {
         });
     }
 };
+
+/**
+ * 生成 URL 友好的 slug
+ */
+function generateSlug(name) {
+    // 中文/英文都支持，去除特殊字符，用短横线连接
+    let slug = name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\u4e00-\u9fff]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    // 追加短随机后缀避免冲突
+    const suffix = Math.random().toString(36).substring(2, 8);
+    return `${slug}-${suffix}`;
+}
+
+/**
+ * 发布场景
+ */
+exports.publishScene = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const scene = await Scene.findOne({ sceneId: id });
+
+        if (!scene) {
+            return res.status(404).json({ success: false, message: '场景不存在' });
+        }
+
+        const slug = scene.slug || generateSlug(scene.name);
+
+        await Scene.findOneAndUpdate(
+            { sceneId: id },
+            { published: true, publishedAt: new Date(), slug }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: '场景已发布',
+            slug,
+            viewUrl: `/scene/${slug}`
+        });
+    } catch (error) {
+        console.error('发布场景失败:', error);
+        res.status(500).json({ success: false, message: '发布场景失败', error: error.message });
+    }
+};
+
+/**
+ * 取消发布场景
+ */
+exports.unpublishScene = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await Scene.findOneAndUpdate(
+            { sceneId: id },
+            { published: false }
+        );
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: '场景不存在' });
+        }
+
+        res.status(200).json({ success: true, message: '已取消发布' });
+    } catch (error) {
+        console.error('取消发布失败:', error);
+        res.status(500).json({ success: false, message: '取消发布失败', error: error.message });
+    }
+};

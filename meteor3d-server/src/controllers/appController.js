@@ -177,3 +177,51 @@ exports.deleteApp = async (req, res) => {
         });
     }
 };
+
+/**
+ * 发布应用
+ */
+exports.publishApp = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await App.findOneAndUpdate(
+            { appId: id },
+            { published: true, publishedAt: new Date() },
+            { new: true }
+        );
+
+        if (!result) {
+            return res.status(404).json({ success: false, error: '应用不存在' });
+        }
+
+        res.json({ success: true, message: '应用已发布' });
+    } catch (error) {
+        console.error('发布应用失败:', error.message);
+        res.status(500).json({ success: false, error: '发布应用失败: ' + error.message });
+    }
+};
+
+/**
+ * 取消发布应用
+ */
+exports.unpublishApp = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await App.findOneAndUpdate(
+            { appId: id },
+            { published: false },
+            { new: true }
+        );
+
+        if (!result) {
+            return res.status(404).json({ success: false, error: '应用不存在' });
+        }
+
+        res.json({ success: true, message: '已取消发布' });
+    } catch (error) {
+        console.error('取消发布失败:', error.message);
+        res.status(500).json({ success: false, error: '取消发布失败: ' + error.message });
+    }
+};

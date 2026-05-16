@@ -8,6 +8,7 @@ const sceneRoutes = require('./src/routes/sceneRoutes');
 const assetRoutes = require('./src/routes/assetRoutes');
 const appRoutes = require('./src/routes/appRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
+const portalRoutes = require('./src/routes/portalRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,6 +32,7 @@ app.use('/api/scene', sceneRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/app', appRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/portal', portalRoutes);
 
 // 根路由
 app.get('/', (req, res) => {

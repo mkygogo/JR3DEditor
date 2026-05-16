@@ -81,7 +81,15 @@ const AppSchema = new mongoose.Schema({
     lastModified: {
         type: Date,
         default: Date.now
-    }
+    },
+
+    // 发布相关
+    published: {
+        type: Boolean,
+        default: false
+    },
+    publishedAt: Date,
+    sceneId: String
 }, {
     timestamps: true
 });

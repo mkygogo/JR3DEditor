@@ -17,4 +17,8 @@ router.put('/:id', appController.updateApp);
 // 删除应用
 router.delete('/:id', appController.deleteApp);
 
+// 发布/取消发布应用
+router.post('/:id/publish', appController.publishApp);
+router.post('/:id/unpublish', appController.unpublishApp);
+
 module.exports = router;

@@ -27,4 +27,10 @@ router.delete('/clear', sceneController.clearScene);
 // POST /api/scene/basemap - 生成底图
 router.post('/basemap', sceneController.generateBaseMapHandler);
 
+// POST /api/scene/:id/publish - 发布场景
+router.post('/:id/publish', sceneController.publishScene);
+
+// POST /api/scene/:id/unpublish - 取消发布
+router.post('/:id/unpublish', sceneController.unpublishScene);
+
 module.exports = router;

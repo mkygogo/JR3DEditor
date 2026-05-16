@@ -68,6 +68,18 @@ const SceneSchema = new mongoose.Schema({
     objectCount: {
         type: Number,
         default: 0
+    },
+
+    // 发布相关
+    published: {
+        type: Boolean,
+        default: false
+    },
+    publishedAt: Date,
+    slug: {
+        type: String,
+        unique: true,
+        sparse: true
     }
 }, {
     timestamps: true
