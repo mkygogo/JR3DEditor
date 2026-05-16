@@ -591,6 +591,11 @@ export class PersistenceManager {
         }
         this.sceneManager.emitGisConfigUpdated();
 
+        // 恢复 HUD 配置
+        if (sceneData.metadata?.hudConfig) {
+            this.sceneManager.hudConfig = sceneData.metadata.hudConfig;
+        }
+
         const objects = sceneData.objects || [];
         let successCount = 0;
         let failedCount = 0;
@@ -649,6 +654,7 @@ export class PersistenceManager {
         const gisConfig = this.sceneManager.gisConfig
             ? { ...this.sceneManager.gisConfig, gridVisible: this.sceneManager.gridVisible }
             : null;
+        const hudConfig = this.sceneManager.hudConfig || null;
 
         // 获取场景元数据从 Store
         const name = this.editorStore?.sceneMetadata?.name || '未命名场景';
@@ -665,7 +671,8 @@ export class PersistenceManager {
             lastModified: Date.now(),
             objectCount: this.sceneManager.objects.length,
             environmentUrl: environmentUrl, // 保存环境贴图 URL
-            gisConfig
+            gisConfig,
+            hudConfig
         });
 
         // 更新 objectMap

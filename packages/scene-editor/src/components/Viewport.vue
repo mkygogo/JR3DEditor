@@ -141,6 +141,9 @@ onMounted(async () => {
   const sceneId = route.params.sceneId || 'default';
   await persistenceManager.init(sceneId);
   
+  // 通知场景加载完成
+  window.dispatchEvent(new CustomEvent('scene-loaded'));
+
   // 在加载完成后聚焦相机
   sceneManager.fitCameraToScene();
   

@@ -25,31 +25,32 @@ export class SceneManager {
     constructor(canvas) {
         this.canvas = canvas;
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x000000); // 深灰色背景，便于观察
+        this.scene.background = new THREE.Color(0x87CEEB); // 天空蓝默认背景
 
         // 初始化 Tween Group
         this.tweenGroup = new Group();
 
-        // 环境光
-        // const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 增强环境光
-        // this.scene.add(ambientLight);
+        // 默认灯光（确保无环境贴图时模型也可见）
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        ambientLight.name = '__defaultAmbient';
+        this.scene.add(ambientLight);
 
-        // // 平行光
-        // const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        // directionalLight.position.set(10, 20, 10);
-        // this.scene.add(directionalLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 10);
+        directionalLight.name = '__defaultDirectional';
+        this.scene.add(directionalLight);
 
-        // // 增加补光
-        // const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // fillLight.position.set(-10, 10, -10);
-        // this.scene.add(fillLight);
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        fillLight.position.set(-10, 10, -10);
+        fillLight.name = '__defaultFill';
+        this.scene.add(fillLight);
 
         this.camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 10000);
         this.camera.position.set(5, 5, 5);
 
-        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, logarithmicDepthBuffer: true }); // 开启 alpha 以防背景问题
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
         this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.0;
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -84,6 +85,7 @@ export class SceneManager {
         this.geoSystem = null;      // Layer 1: 坐标系统
         this.tileMapManager = null; // Layer 2: 瓦片地图
         this.gisConfig = null;
+        this.hudConfig = null; // HUD 覆盖层配置
         this.gridHelper = null; // 网格辅助平面
         this.gridVisible = false;
 

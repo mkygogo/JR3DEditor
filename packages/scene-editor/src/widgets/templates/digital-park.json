@@ -1,0 +1,228 @@
+{
+  "name": "数字园区",
+  "description": "智慧园区综合管控大屏，包含消防、能源、安防、车辆等系统监控",
+  "hudConfig": {
+    "enabled": true,
+    "template": "digital-park",
+    "widgets": [
+      {
+        "id": "w_topbar",
+        "type": "top-bar",
+        "name": "顶部标题栏",
+        "zone": "top-bar",
+        "data": {
+          "title": "智慧园区综合管控平台",
+          "tabs": ["数字地标", "智慧楼宇", "数字园区", "运维监控", "应急指挥"],
+          "activeTab": 2,
+          "showTime": true
+        },
+        "style": {}
+      },
+      {
+        "id": "w_left_fire",
+        "type": "side-panel",
+        "name": "消防系统",
+        "zone": "left-panel",
+        "data": { "title": "消防系统", "position": "left", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_fire_temp",
+        "type": "progress-bar",
+        "name": "温感报警器",
+        "zone": "left-panel",
+        "data": { "label": "温感报警器", "value": 1550, "max": 2000, "unit": "", "color": "#00d4ff" },
+        "style": {}
+      },
+      {
+        "id": "w_fire_smoke",
+        "type": "progress-bar",
+        "name": "烟感报警器",
+        "zone": "left-panel",
+        "data": { "label": "烟感报警器", "value": 1680, "max": 2000, "unit": "", "color": "#00ff88" },
+        "style": {}
+      },
+      {
+        "id": "w_fire_manual",
+        "type": "progress-bar",
+        "name": "手动报警器",
+        "zone": "left-panel",
+        "data": { "label": "手动报警器", "value": 987, "max": 2000, "unit": "", "color": "#ffaa00" },
+        "style": {}
+      },
+      {
+        "id": "w_left_energy",
+        "type": "side-panel",
+        "name": "能源管理",
+        "zone": "left-panel",
+        "data": { "title": "能源管理", "position": "left", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_energy_bar",
+        "type": "bar-chart",
+        "name": "日总耗能",
+        "zone": "left-panel",
+        "data": {
+          "title": "日总耗能(kWh)",
+          "categories": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          "series": [{ "name": "耗能", "data": [320, 280, 350, 420, 380, 230, 190] }],
+          "color": "#00d4ff"
+        },
+        "style": {}
+      },
+      {
+        "id": "w_left_hvac",
+        "type": "side-panel",
+        "name": "暖通空调",
+        "zone": "left-panel",
+        "data": { "title": "暖通空调", "position": "left", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_hvac_line",
+        "type": "line-chart",
+        "name": "温度趋势",
+        "zone": "left-panel",
+        "data": {
+          "title": "温度趋势(℃)",
+          "categories": ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"],
+          "series": [{ "name": "温度", "data": [18, 16, 20, 26, 24, 19] }],
+          "color": "#ffaa00"
+        },
+        "style": {}
+      },
+      {
+        "id": "w_left_power",
+        "type": "side-panel",
+        "name": "交配电",
+        "zone": "left-panel",
+        "data": { "title": "交配电", "position": "left", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_power_gauge1",
+        "type": "gauge-chart",
+        "name": "A相负荷",
+        "zone": "left-panel",
+        "data": { "label": "A相负荷", "value": 30, "min": 0, "max": 100, "unit": "%", "color": "#00d4ff" },
+        "style": {}
+      },
+      {
+        "id": "w_power_gauge2",
+        "type": "gauge-chart",
+        "name": "B相负荷",
+        "zone": "left-panel",
+        "data": { "label": "B相负荷", "value": 50, "min": 0, "max": 100, "unit": "%", "color": "#00ff88" },
+        "style": {}
+      },
+      {
+        "id": "w_right_alarm",
+        "type": "side-panel",
+        "name": "防盗报警",
+        "zone": "right-panel",
+        "data": { "title": "防盗报警", "position": "right", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_alarm_status",
+        "type": "alert-list",
+        "name": "报警状态",
+        "zone": "right-panel",
+        "data": {
+          "title": "",
+          "items": [
+            { "label": "状态", "value": "撤防", "color": "#52c41a" },
+            { "label": "总数", "value": "56个", "color": "#00d4ff" },
+            { "label": "报警", "value": "13个", "color": "#ff4d4f" },
+            { "label": "故障", "value": "2个", "color": "#faad14" }
+          ]
+        },
+        "style": {}
+      },
+      {
+        "id": "w_right_video",
+        "type": "side-panel",
+        "name": "视频监控",
+        "zone": "right-panel",
+        "data": { "title": "视频监控", "position": "right", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_video_table",
+        "type": "data-table",
+        "name": "监控设备",
+        "zone": "right-panel",
+        "data": {
+          "title": "",
+          "columns": ["设备", "在线", "总数"],
+          "rows": [
+            { "icon": "📹", "values": ["硬盘录相机", "155台", "550台"] },
+            { "icon": "🎥", "values": ["球相机", "200台", "300台"] },
+            { "icon": "📷", "values": ["枪相机", "350台", "500台"] }
+          ]
+        },
+        "style": {}
+      },
+      {
+        "id": "w_right_vehicle",
+        "type": "side-panel",
+        "name": "车辆管理",
+        "zone": "right-panel",
+        "data": { "title": "车辆管理", "position": "right", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_parking_total",
+        "type": "stat-card",
+        "name": "总车位",
+        "zone": "right-panel",
+        "data": { "label": "总车位", "value": 780, "unit": "", "icon": "🅿️", "color": "#00d4ff" },
+        "style": {}
+      },
+      {
+        "id": "w_parking_avail",
+        "type": "stat-card",
+        "name": "可用车位",
+        "zone": "right-panel",
+        "data": { "label": "可用车位", "value": 238, "unit": "", "icon": "🟢", "color": "#00ff88" },
+        "style": {}
+      },
+      {
+        "id": "w_right_water",
+        "type": "side-panel",
+        "name": "给排水",
+        "zone": "right-panel",
+        "data": { "title": "给排水", "position": "right", "children": [] },
+        "style": {}
+      },
+      {
+        "id": "w_water_pie",
+        "type": "pie-chart",
+        "name": "用水分类",
+        "zone": "right-panel",
+        "data": {
+          "title": "用水分类",
+          "data": [
+            { "name": "生活用水", "value": 335 },
+            { "name": "消防用水", "value": 150 },
+            { "name": "绿化用水", "value": 234 },
+            { "name": "空调用水", "value": 180 }
+          ]
+        },
+        "style": {}
+      },
+      {
+        "id": "w_floor_selector",
+        "type": "floor-selector",
+        "name": "楼层选择",
+        "zone": "center-popup",
+        "data": {
+          "floors": ["F9", "F8", "F7", "F6", "F5", "F4", "F3", "F2", "F1", "B1", "B2"],
+          "activeFloor": "F1"
+        },
+        "style": {}
+      }
+    ]
+  }
+}

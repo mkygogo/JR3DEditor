@@ -16,6 +16,7 @@
     "@meteor3d/core": "workspace:*",
     "@tweenjs/tween.js": "^25.0.0",
     "driver.js": "^1.4.0",
+    "echarts": "^6.0.0",
     "leaflet": "^1.9.4",
     "pinia": "^3.0.4",
     "three": "^0.181.2",

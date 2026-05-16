@@ -142,6 +142,7 @@ exports.saveScene = async (req, res) => {
         if (metadata.environmentUrl !== undefined) sceneData.environmentUrl = metadata.environmentUrl; // 保存环境贴图 URL
         if (metadata.cameraFar !== undefined) sceneData.cameraFar = metadata.cameraFar; // 保存相机的远裁切面
         if (metadata.gisConfig !== undefined) sceneData.gisConfig = metadata.gisConfig; // 保存 GIS 配置
+        if (metadata.hudConfig !== undefined) sceneData.hudConfig = metadata.hudConfig; // 保存 HUD 覆盖层配置
 
         // 如果有新的环境贴图，上传到又拍云
         if (metadata.environmentUrl) {

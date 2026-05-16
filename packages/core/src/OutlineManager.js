@@ -24,14 +24,19 @@ export class OutlineManager {
         // 记录描边对象映射: uuid -> Object3D
         this.outlinedObjects = new Map();
 
-        // 初始化后处理
-        this._initComposer();
+        // 延迟初始化后处理（首次 enable 时创建）
+        this.composer = null;
+        this.outlinePass = null;
+        this.renderPass = null;
+        this.outputPass = null;
     }
 
     /**
-     * 初始化后处理管道
+     * 初始化后处理管道（延迟到首次使用时）
      */
     _initComposer() {
+        if (this.composer) return;
+
         const size = this.renderer.getSize(new THREE.Vector2());
 
         // 创建 EffectComposer
@@ -72,6 +77,9 @@ export class OutlineManager {
      */
     enable(object, options = {}) {
         if (!object || !object.uuid) return false;
+
+        // 延迟初始化
+        this._initComposer();
 
         // 记录对象
         this.outlinedObjects.set(object.uuid, object);
@@ -139,6 +147,7 @@ export class OutlineManager {
      * @param {number} height 
      */
     resize(width, height) {
+        if (!this.composer) return;
         this.composer.setSize(width, height);
         this.outlinePass.resolution.set(width, height);
     }
@@ -148,7 +157,7 @@ export class OutlineManager {
      * 在动画循环中调用，替代 renderer.render()
      */
     render() {
-        if (this.outlinedObjects.size > 0) {
+        if (this.outlinedObjects.size > 0 && this.composer) {
             // 有描边对象时使用 composer 渲染
             this.composer.render();
             return true;
@@ -161,6 +170,9 @@ export class OutlineManager {
      */
     dispose() {
         this.outlinedObjects.clear();
-        this.composer.dispose();
+        if (this.composer) {
+            this.composer.dispose();
+            this.composer = null;
+        }
     }
 }

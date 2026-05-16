@@ -124,6 +124,11 @@ export async function loadScene({ sceneId, serverUrl, container, config = {} }) 
         // console.log(`✅ 相机配置加载成功: 远裁切面 ${metadata.cameraFar}`);
     }
 
+    // ========== 2.6 恢复 HUD 配置 ==========
+    if (metadata.hudConfig) {
+        sceneManager.hudConfig = metadata.hudConfig;
+    }
+
     // ========== 3. 加载场景对象 ==========
     let successCount = 0;
     let failedCount = 0;

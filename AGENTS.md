@@ -4,7 +4,7 @@
 
 Meteor3D 是一个**低代码 3D 场景可视化与编辑平台**，采用 pnpm monorepo 架构，包含后端服务、核心 SDK、场景编辑器、资产管理器、展示门户五大模块。支持拖拽式 3D 场景创建、GIS 坐标系统、实时资产处理流水线、场景发布与公开展示、云存储集成。
 
-**技术栈**: Three.js + Vue3 + Express + MongoDB + Redis + Bull Queue
+**技术栈**: Three.js + Vue3 + Express + MongoDB + Redis + Bull Queue + ECharts
 
 ---
 
@@ -79,19 +79,27 @@ GOOGLE_AI_KEY=...         # Gemini (可选)
 | 模块 | 职责 |
 |------|------|
 | `SceneManager` | Three.js 场景/相机/渲染器初始化，集成所有子管理器 |
-| `PersistenceManager` | 场景序列化/反序列化 |
+| `PersistenceManager` | 场景序列化/反序列化（含 HUD 配置） |
 | `DBManager` | 后端 API 调用封装 |
 | `CameraControlManager` | 多相机控制模式 (Orbit / Ghost FPS) |
 | `GeoCoordinateSystem` | WGS84 ↔ 本地坐标转换 (proj4) |
 | `TileMapManager` | 卫星影像瓦片加载 |
-| `LabelManager` | 3D 标签 |
-| `OutlineManager` | 后处理描边 |
+| `LabelManager` | 3D 标签（无标签时跳过渲染） |
+| `OutlineManager` | 后处理描边（延迟初始化 EffectComposer） |
 | `HighlightManager` | 高亮发光效果 |
 | `LineManager` | 线条绘制 |
 | `VFXManager` | 粒子特效 |
 | `RainManager` / `SnowManager` | 天气粒子效果 |
 | `StatsManager` | FPS 监控 |
 | `RaycastManager` | 射线检测 |
+| `TriangleStatsManager` | 三角形统计 |
+
+**性能优化**:
+- `powerPreference: 'high-performance'` — 强制使用独立显卡
+- `Math.min(devicePixelRatio, 2)` — 防止超高 DPI 屏幕过度渲染
+- 无 `logarithmicDepthBuffer`（仅 GIS 模式按需启用）
+- OutlineManager 延迟创建 EffectComposer（首次 enable 时才分配 render target）
+- LabelManager 无标签时跳过 CSS2DRenderer 渲染
 
 **构建命令**: `pnpm build:core`
 
@@ -114,11 +122,12 @@ GOOGLE_AI_KEY=...         # Gemini (可选)
 │ Header: 首页链接 │ 场景标题 │ Toolbar (保存/撤销/重做) │
 ├──────────┬────────────────────────┬──────────────────┤
 │ SceneTree│    Viewport (3D)       │ 右侧面板:         │
-│ (对象树) │  + LibraryPanel(底部)  │ - 属性面板        │
-│          │                        │ - 材质面板        │
+│ (对象树) │  + HudCanvas (覆盖层)  │ - 属性面板        │
+│          │  + LibraryPanel(底部)  │ - 材质面板        │
 │          │                        │ - 场景设置        │
 │          │                        │ - GIS 设置        │
 │          │                        │ - 天气效果        │
+│          │                        │ - HUD 编辑器     │
 └──────────┴────────────────────────┴──────────────────┘
 ```
 
@@ -127,6 +136,18 @@ GOOGLE_AI_KEY=...         # Gemini (可选)
 - `TransformManager` — Gizmo 变换工具 (移动/旋转/缩放)
 - `HistoryManager` — 撤销/重做栈 (Command 模式)
 - `CommandFactory` — AddObject / DeleteObject / ModifyObject / MoveObject 命令
+
+**HUD 系统 (`src/widgets/` + `src/components/Hud*` + `src/stores/hudStore.js`)**:
+- `HudCanvas` — 自由定位画布，支持拖拽/缩放 widget
+- `HudToolbar` — HUD 编辑模式工具栏
+- `HudEditorPanel` — 右侧 HUD 属性编辑面板（布局/数据/样式 tab）
+- `hudStore` — Pinia 状态管理（widget 列表、选中、编辑模式）
+- `WidgetRenderer` — 统一 widget 渲染器（按 type 动态加载组件）
+- **Widget 类型**: stat-card, progress-bar, pie-chart, gauge-chart, bar-chart, line-chart, text-label, image, button, alert-list, data-table, divider, container
+- **Widget 定位**: 百分比坐标 (x, y, width, height)，支持自由拖拽和缩放
+- **数据源**: 静态数据 / 模拟随机数据（可扩展 API 数据源）
+- **图表引擎**: ECharts 6.0
+- **模板系统**: 预设布局模板 (如 digital-park.json)
 
 **启动命令**: `pnpm dev:scene`
 
@@ -161,10 +182,12 @@ GOOGLE_AI_KEY=...         # Gemini (可选)
 **功能**:
 - 浏览所有已发布的 3D 场景和应用
 - 全屏 3D 场景查看器（基于核心 SDK 的 `loadScene()`）
-- 查看器工具栏：相机模式切换 (Orbit/Ghost)、FPS 统计、全屏
+- HUD 覆盖层：自动加载场景中保存的 HUD 配置并渲染 widget
+- 查看器工具栏：相机模式切换 (Orbit/Ghost)、FPS 统计、全屏（默认隐藏，鼠标移到顶部自动下拉）
 - 场景/应用筛选标签页
 - 分页导航
 - Vite 代理 `/api` → `http://localhost:3001`
+- Vite 别名 `@widgets` → `scene-editor/src/widgets`（复用 widget 组件）
 
 **启动命令**: `pnpm dev:portal`
 
@@ -178,6 +201,7 @@ sceneId, name, description, thumbnail, environmentUrl,
 cameraFar (default: 1000000),
 cloudUrls: { environment, baseMap },
 gisConfig: { enable, center: {lng, lat}, size, bounds, projection, gridVisible, baseMapUrl, showBaseMap },
+hudConfig: { widgets: [{ id, type, name, x, y, width, height, data, style }] },
 published (Boolean, default: false), publishedAt (Date), slug (String, unique sparse)
 ```
 
@@ -271,6 +295,8 @@ pnpm build:all       # 构建所有包
 4. **Persistence Layer**: PersistenceManager 负责 Three.js 对象 ↔ JSON 序列化
 5. **Event-Driven**: SceneManager 通过事件系统通知 UI 层变化
 6. **Publish Workflow**: 场景/应用通过 publish API 标记发布状态，门户 SPA 通过 portal API 只展示已发布内容，slug 友好 URL 支持公开访问
+7. **HUD Overlay**: HUD 配置随场景持久化（hudConfig 字段），编辑器通过 HudCanvas 可视化编辑，Portal 通过 HudOverlay 只读渲染
+8. **Lazy Initialization**: 重资源（如 EffectComposer）延迟到首次使用时创建，避免空场景性能浪费
 
 ---
 

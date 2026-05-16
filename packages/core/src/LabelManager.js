@@ -166,6 +166,7 @@ export class LabelManager {
      * 更新渲染（在动画循环中调用）
      */
     update() {
+        if (this.labels.size === 0) return;
         this.cssRenderer.render(this.scene, this.camera);
     }
 

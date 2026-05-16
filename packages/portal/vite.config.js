@@ -11,7 +11,8 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url))
+            '@': fileURLToPath(new URL('./src', import.meta.url)),
+            '@widgets': fileURLToPath(new URL('../scene-editor/src/widgets', import.meta.url))
         }
     },
     server: {

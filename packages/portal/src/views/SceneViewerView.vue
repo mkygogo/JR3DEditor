@@ -1,5 +1,7 @@
 <template>
   <div class="viewer">
+    <!-- Hover trigger zone -->
+    <div class="toolbar-trigger" v-if="ready"></div>
     <!-- Floating toolbar -->
     <div class="toolbar" v-if="ready">
       <router-link to="/" class="back-btn">← 返回</router-link>
@@ -15,7 +17,9 @@
     </div>
 
     <!-- 3D Canvas -->
-    <div ref="canvasContainer" class="canvas-container"></div>
+    <div ref="canvasContainer" class="canvas-container">
+      <HudOverlay :hudConfig="hudConfig" />
+    </div>
 
     <!-- Loading overlay -->
     <div v-if="loading" class="loading-overlay">
@@ -35,6 +39,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getPublishedScene } from '../services/portalService';
+import HudOverlay from '../components/HudOverlay.vue';
 
 const route = useRoute();
 const canvasContainer = ref(null);
@@ -43,6 +48,7 @@ const ready = ref(false);
 const error = ref(null);
 const sceneName = ref('');
 const cameraMode = ref('orbit');
+const hudConfig = ref(null);
 
 let instance = null;
 let statsEnabled = false;
@@ -62,6 +68,11 @@ onMounted(async () => {
       container: canvasContainer.value,
       config: { fitCamera: true, autoResize: true }
     });
+
+    // Load HUD config from scene
+    if (instance?._internal?.sceneManager?.hudConfig) {
+      hudConfig.value = instance._internal.sceneManager.hudConfig;
+    }
 
     ready.value = true;
   } catch (e) {
@@ -113,6 +124,16 @@ const toggleFullscreen = () => {
 .canvas-container {
   width: 100%;
   height: 100%;
+  position: relative;
+}
+
+.toolbar-trigger {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  z-index: 11;
 }
 
 .toolbar {
@@ -128,6 +149,15 @@ const toggleFullscreen = () => {
   padding: 0 16px;
   gap: 16px;
   z-index: 10;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toolbar-trigger:hover ~ .toolbar,
+.toolbar:hover {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 .back-btn {

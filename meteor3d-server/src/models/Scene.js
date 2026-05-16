@@ -80,6 +80,12 @@ const SceneSchema = new mongoose.Schema({
         type: String,
         unique: true,
         sparse: true
+    },
+
+    // HUD 覆盖层配置 (数字孪生 UI)
+    hudConfig: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
     }
 }, {
     timestamps: true

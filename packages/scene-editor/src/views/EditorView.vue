@@ -10,6 +10,8 @@
       <div class="center-panel">
         <div class="viewport-wrapper">
           <Viewport />
+          <HudCanvas v-if="hudConfig.enabled" />
+          <HudToolbar />
         </div>
         <div class="library-wrapper">
           <LibraryPanel />
@@ -35,6 +37,7 @@
           <SceneSettingsPanel v-show="activeRightTab === 'settings'" />
           <GisSettingsPanel v-show="activeRightTab === 'gis'" />
           <WeatherPanel v-show="activeRightTab === 'weather'" />
+          <HudEditorPanel v-show="activeRightTab === 'hud'" />
         </div>
       </div>
     </div>
@@ -42,7 +45,7 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref, nextTick } from 'vue';
+import { onMounted, watch, ref, computed, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import Toolbar from '../components/Toolbar.vue';
 import LibraryPanel from '../components/LibraryPanel.vue';
@@ -53,10 +56,21 @@ import MaterialPanel from '../components/MaterialPanel.vue';
 import SceneSettingsPanel from '../components/SceneSettingsPanel.vue';
 import GisSettingsPanel from '../components/GisSettingsPanel.vue';
 import WeatherPanel from '../components/WeatherPanel.vue';
+import HudCanvas from '../components/HudCanvas.vue';
+import HudToolbar from '../components/HudToolbar.vue';
+import HudEditorPanel from '../components/HudEditorPanel.vue';
+import { useHudStore } from '../stores/hudStore';
 import { startOnboarding } from '../utils/onboarding';
 
 const route = useRoute();
 const activeRightTab = ref('properties');
+const hudStore = useHudStore();
+const hudConfig = computed(() => hudStore.hudConfig);
+
+// 加载场景后恢复 HUD
+function restoreHudConfig() {
+  hudStore.restoreFromScene();
+}
 
 const rightTabs = [
   { 
@@ -83,6 +97,11 @@ const rightTabs = [
     id: 'weather', 
     title: '天气',
     icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h.71C7.37 7.69 9.48 6 12 6c3.04 0 5.5 2.46 5.5 5.5v.5H19c1.66 0 3 1.34 3 3s-1.34 3-3 3z"/></svg>'
+  },
+  { 
+    id: 'hud', 
+    title: 'HUD覆盖层',
+    icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM5 15h2v2H5zm0-4h2v2H5zm0-4h2v2H5zm12 8h2v2h-2zm0-4h2v2h-2zm0-4h2v2h-2zm-5 8h2v2h-2z"/></svg>'
   }
 ];
 
@@ -118,6 +137,15 @@ onMounted(() => {
     };
     window.addEventListener('library-loaded', onLibraryLoaded);
   }
+
+  // 场景加载完成后恢复 HUD 配置
+  const onSceneLoaded = () => {
+    restoreHudConfig();
+    window.removeEventListener('scene-loaded', onSceneLoaded);
+  };
+  window.addEventListener('scene-loaded', onSceneLoaded);
+  // 如果场景已经加载完成（页面刷新后），稍后尝试恢复
+  setTimeout(restoreHudConfig, 2000);
 });
 
 // 监听路由变化，支持场景切换
