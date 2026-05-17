@@ -300,6 +300,168 @@ pnpm build:all       # 构建所有包
 
 ---
 
+## HUD 数据绑定系统（v2024.5）
+
+**概述**：低代码数据绑定引擎，让 HUD Widget 实时读取 3D 场景对象属性并支持交互动作。编辑器提供可视化配置，门户支持发布场景后的只读绑定。
+
+### 核心模块 (`packages/core/src/binding/`)
+
+| 文件 | 功能 |
+|------|------|
+| `constants.js` | 枚举常量（绑定模式、映射方向、动作触发器、目标模式） |
+| `pathResolver.js` | 对象路径白名单、值类型推断、路径读写接口 |
+| `transformRegistry.js` | 8 种值转换器（保留小数、范围限制、缩放、弧度转角度、布尔标签、模板字符串等） |
+| `actionExecutors.js` | 4 种动作执行器（高亮、相机聚焦、切换可见、设置属性） |
+| `BindingManager.js` | 核心管理器：绑定解析、属性同步、事件驱动、动作分发 |
+| `index.js` | 统一导出接口 |
+
+### 绑定模式（3 种）
+
+| 模式 | 说明 | 用途 |
+|------|------|------|
+| `static` | 静态数据 | Widget 显示固定值 |
+| `context-selected` | 跟随选中对象（兼容模式） | 编辑器中动态追踪当前选中的场景对象 |
+| `object-id` | 指定对象 UUID | 编辑器和门户中精确绑定固定对象 |
+| `bound-object` | 当前 Widget 绑定对象 | 动作目标默认指向该 Widget 的数据源对象 |
+
+### 属性映射（READ/WRITE/BOTH）
+
+可绑定的对象属性路径（白名单）：
+- `position.x/y/z` — 位置坐标
+- `rotation.x/y/z` — 欧拉角
+- `scale.x/y/z` — 缩放系数
+- `name` — 对象名称
+- `visible` — 可见性
+- `userData.*` — 自定义数据
+
+### 动作系统（4 种）
+
+| 动作 | 触发器 | 目标 | 效果 |
+|------|--------|------|------|
+| `highlight-object` | click/hover-enter | 绑定/选中/指定对象 | 发光高亮 2s 自动还原 |
+| `camera-focus` | click/hover-enter | 绑定/选中/指定对象 | 1s 内相机聚焦至对象 |
+| `toggle-visible` | click/value-change | 绑定/选中/指定对象 | 切换可见性 |
+| `set-property` | click/value-change | 绑定/选中/指定对象 | 写入任意可写属性 |
+
+### 编辑器集成（5173）
+
+**右侧 HUD 编辑面板新增 Tab**：
+- **"绑定" Tab**（`DataBindingEditor.vue`）
+  - 选择绑定模式（静态/跟随选中/指定对象）
+  - 添加属性映射（源属性 → 目标字段 → 值变换）
+  - 对象选择器和路径选择器下拉
+  
+- **"动作" Tab**（`ActionsEditor.vue`）
+  - 每条动作配置：触发器 + 动作类型 + 目标模式 + 可选参数
+  - 支持多条动作链
+
+**Viewport.vue 集成**：
+- `BindingManager` 在场景加载后初始化，write-back 启用
+- 监听 `hudConfig` 变化自动 `rebindAll()`
+- 订阅 `binding:value-updated` 事件，推送实时数据到 `hudStore`
+- `setNestedVal()` 工具函数支持点路径赋值
+
+**事件发射**（通过 SceneManager）：
+- `object:selected` — 选中对象时发出
+- `object:transform` — 变换完成或属性面板修改时发出
+- `object:renamed` — 名称修改时发出
+- `object:visibility` — 可见性变化时发出
+- `object:added/removed` — 对象添加/删除时发出
+
+### 门户集成（5177）
+
+**SceneViewerView.vue**：
+- 场景加载后创建 `BindingManager`（只读模式 `allowWriteBack: false`）
+- `liveWidgetData` 响应式对象接收实时绑定数据
+- 订阅 `binding:value-updated` 事件，只需读取无需写回
+
+**HudOverlay.vue**：
+- 新增 props：`bindingManager`、`liveData`
+- `mergedWidget()` 深度合并原始 widget 配置 + 实时绑定数据（不破坏原始 hudConfig）
+- `onWidgetClick()` 分发 click 触发器到 `bindingManager.dispatchWidgetTrigger()`
+
+**功能**：发布场景后，门户显示该场景的 HUD Widget，Widget 中的绑定数据实时跟踪 3D 对象属性；点击 Widget 可触发高亮/聚焦等动作。
+
+### 核心 API
+
+```javascript
+// 初始化
+const bm = new BindingManager({
+  sceneManager,
+  hudConfigProvider: () => hudConfig,
+  selectionProvider: () => selectedObject,
+  objectResolver: (uuid) => sceneManager.getObjectByUUID(uuid),
+  allowWriteBack: true,
+  onEvent: (type, payload) => { /* binding:value-updated等事件 */ }
+});
+
+// 生命周期
+bm.start();           // 开始绑定与事件监听
+bm.rebindAll();       // 重新解析所有 widget 绑定
+bm.rebindWidget(id);  // 重新解析单个 widget
+bm.stop();            // 停止并清理
+bm.dispose();         // 完全释放
+
+// 同步
+bm.syncRead(widgetId);           // 手动同步该 widget 的所有读映射
+bm.applyWidgetInput(widgetId, { field: value });  // 应用 widget 输入（写映射）
+
+// 动作
+bm.dispatchWidgetTrigger(widgetId, 'click', { /* eventData */ });
+
+// 查询
+bm.getWidgetStatus(widgetId);       // 返回 OK/DEGRADED/ERROR
+bm.getWidgetRuntimeData(widgetId);  // 获取含绑定数据的完整 widget.data
+bm.validateConfig(hudConfig);       // 验证配置有效性
+```
+
+### 数据模型扩展
+
+**Scene.hudConfig** 新增字段：
+```javascript
+{
+  widgets: [{
+    id: 'w_xxx',
+    type: 'stat-card',
+    name: '位置 X',
+    x: 10, y: 10, width: 20, height: 15,
+    data: { title: '位置', value: 0 },
+    style: { ... },
+    
+    // 新增：数据绑定配置
+    dataBinding: {
+      mode: 'object-id',  // static | context-selected | object-id | bound-object
+      source: { objectId: 'uuid-of-cube' },
+      mappings: [{
+        id: 'm_1',
+        objectPath: 'position.x',
+        widgetField: 'value',
+        direction: 'read',  // read | write | both
+        transform: {
+          read: { id: 'number.toFixed', params: { digits: 2 } }
+        }
+      }],
+      updatePolicy: 'event'
+    },
+    
+    // 新增：动作配置
+    actions: [{
+      id: 'a_1',
+      enabled: true,
+      trigger: 'click',          // click | hover-enter | hover-leave | value-change
+      type: 'camera-focus',      // highlight-object | camera-focus | toggle-visible | set-property
+      target: {
+        mode: 'bound-object',    // bound-object | context-selected | object-id
+        objectId: null
+      },
+      payload: { fitPadding: 1.5, durationMs: 1000 }
+    }]
+  }]
+}
+```
+
+---
+
 ## Infrastructure Dependencies
 
 | 服务 | 默认配置 | 用途 |
