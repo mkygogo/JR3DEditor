@@ -11,7 +11,7 @@ const chatRoutes = require('./src/routes/chatRoutes');
 const portalRoutes = require('./src/routes/portalRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 6001;
 
 // 连接数据库
 connectDB();

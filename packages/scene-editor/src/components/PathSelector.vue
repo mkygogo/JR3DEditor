@@ -3,9 +3,9 @@
     <label>{{ label }}</label>
     <select :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
       <option value="">-- 选择属性 --</option>
-      <optgroup v-for="(paths, group) in groupedPaths" :key="group" :label="group">
-        <option v-for="p in paths" :key="p.path" :value="p.path">
-          {{ p.path }} <span v-if="!p.writable">(只读)</span>
+      <optgroup v-for="group in visibleGroups" :key="group.group" :label="group.group">
+        <option v-for="path in group.paths" :key="path" :value="path">
+          {{ getPathLabel(path) }}
         </option>
       </optgroup>
     </select>
@@ -14,16 +14,55 @@
 
 <script setup>
 import { computed } from 'vue'
-import { getGroupedPaths } from '@meteor3d/core'
+import { storeToRefs } from 'pinia'
+import { ALLOWED_PATHS, getGroupedPaths } from '@meteor3d/core'
+import { useEditorStore } from '../stores/editorStore'
 
-defineProps({
+const props = defineProps({
   modelValue: { type: String, default: '' },
   label: { type: String, default: '属性路径' },
   writableOnly: { type: Boolean, default: false }
 })
 defineEmits(['update:modelValue'])
 
-const groupedPaths = computed(() => getGroupedPaths())
+const editorStore = useEditorStore()
+const { selectedObject } = storeToRefs(editorStore)
+
+const pathLabels = {
+  name: '对象名称 name',
+  visible: '是否可见 visible',
+  type: '对象类型 type',
+  position: '位置 position',
+  'position.x': '位置 X position.x',
+  'position.y': '位置 Y position.y',
+  'position.z': '位置 Z position.z',
+  rotation: '旋转 rotation',
+  'rotation.x': '旋转 X rotation.x',
+  'rotation.y': '旋转 Y rotation.y',
+  'rotation.z': '旋转 Z rotation.z',
+  scale: '缩放 scale',
+  'scale.x': '缩放 X scale.x',
+  'scale.y': '缩放 Y scale.y',
+  'scale.z': '缩放 Z scale.z',
+}
+
+const customProperties = computed(() => selectedObject.value?.userData?.customProperties || [])
+
+const visibleGroups = computed(() => {
+  return getGroupedPaths(customProperties.value)
+    .map(group => ({
+      ...group,
+      paths: group.paths.filter(path => !props.writableOnly || ALLOWED_PATHS[path]?.writable)
+    }))
+    .filter(group => group.paths.length > 0)
+})
+
+function getPathLabel(path) {
+  const custom = customProperties.value.find(item => `custom.${item.key}` === path)
+  if (custom) return `${custom.label || custom.key} ${path}`
+  const suffix = ALLOWED_PATHS[path]?.writable ? '' : ' (只读)'
+  return `${pathLabels[path] || path}${suffix}`
+}
 </script>
 
 <style scoped>

@@ -22,6 +22,7 @@ import LineChart from './data/LineChart.vue'
 import PieChart from './data/PieChart.vue'
 import DataTable from './data/DataTable.vue'
 import AlertList from './data/AlertList.vue'
+import ObjectInfoPanel from './data/ObjectInfoPanel.vue'
 
 const props = defineProps({
   widget: { type: Object, required: true }
@@ -41,6 +42,7 @@ const componentMap = {
   [WIDGET_TYPES.PIE_CHART]: PieChart,
   [WIDGET_TYPES.DATA_TABLE]: DataTable,
   [WIDGET_TYPES.ALERT_LIST]: AlertList,
+  [WIDGET_TYPES.OBJECT_INFO_PANEL]: ObjectInfoPanel,
 }
 
 const widgetComponent = computed(() => componentMap[props.widget.type] || null)

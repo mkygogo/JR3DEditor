@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getPublishedScene } from '../services/portalService';
 import HudOverlay from '../components/HudOverlay.vue';
@@ -55,6 +55,45 @@ let bindingManager = null;
 let statsEnabled = false;
 const liveWidgetData = reactive({});
 const bindingManagerRef = ref(null);
+const selectedSceneObject = shallowRef(null);
+let sceneClickHandler = null;
+
+function setNestedVal(obj, path, value) {
+  if (!path) return;
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (cur[parts[i]] == null || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = value;
+}
+
+function autoPopulateObjectInfoPanels(sm, object) {
+  const widgets = sm.hudConfig?.widgets;
+  if (!widgets) return;
+  for (const widget of widgets) {
+    if (widget.type !== 'object-info-panel') continue;
+    if (!widget.data?.autoCustomFields) continue;
+    const binding = widget.dataBinding;
+    if (!binding || binding.mode !== 'context-selected') continue;
+
+    const baseFields = (widget.data.fields || []).filter(f => f.path && !f.path.startsWith('custom.'));
+    let customFields = [];
+    if (object) {
+      const customProps = object.userData?.customProperties || [];
+      customFields = customProps.map(prop => ({
+        label: prop.label || prop.key,
+        value: prop.value ?? '-',
+        path: `custom.${prop.key}`,
+        _auto: true,
+      }));
+    }
+    const updatedFields = [...baseFields, ...customFields];
+    // Update liveData for the widget
+    liveWidgetData[widget.id] = { ...(liveWidgetData[widget.id] || {}), fields: updatedFields };
+  }
+}
 
 onMounted(async () => {
   const slug = route.params.slug;
@@ -77,20 +116,30 @@ onMounted(async () => {
     if (sm?.hudConfig) {
       hudConfig.value = sm.hudConfig;
 
+      sceneClickHandler = ({ object }) => {
+        const selected = sm.resolveSceneObject?.(object) || object || null;
+        selectedSceneObject.value = selected;
+        sm.emit?.('object:selected', { object: selected });
+      };
+      sm.on?.('scene-click', sceneClickHandler);
+
       // Start binding manager in read-only mode
       const { BindingManager } = await import('@meteor3d/core');
       bindingManager = new BindingManager({
         sceneManager: sm,
         hudConfigProvider: () => sm.hudConfig,
-        selectionProvider: () => null,
+        selectionProvider: () => selectedSceneObject.value,
         objectResolver: (uuid) => sm.getObjectByUUID ? sm.getObjectByUUID(uuid) : sm.findObjectByUUID(uuid),
         allowWriteBack: false,
         onEvent: (type, payload) => {
           if (type === 'binding:value-updated' && payload.direction === 'read') {
-            liveWidgetData[payload.widgetId] = {
-              ...(liveWidgetData[payload.widgetId] || {}),
-              [payload.widgetField]: payload.newValue,
-            };
+            const nextData = { ...(liveWidgetData[payload.widgetId] || {}) };
+            setNestedVal(nextData, payload.widgetField, payload.newValue);
+            liveWidgetData[payload.widgetId] = nextData;
+          }
+          if (type === 'context:object-changed') {
+            const obj = payload.newObjectId ? (sm.getObjectByUUID?.(payload.newObjectId) || sm.findObjectByUUID?.(payload.newObjectId)) : null;
+            autoPopulateObjectInfoPanels(sm, obj);
           }
         },
       });
@@ -108,6 +157,11 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  const sm = instance?._internal?.sceneManager;
+  if (sceneClickHandler && sm?.off) {
+    sm.off('scene-click', sceneClickHandler);
+    sceneClickHandler = null;
+  }
   if (bindingManager) { bindingManager.dispose(); bindingManager = null; }
   if (instance?.dispose) instance.dispose();
 });

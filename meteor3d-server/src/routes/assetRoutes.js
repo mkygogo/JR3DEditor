@@ -16,16 +16,16 @@ router.post('/upload', upload.fields([
 // GET /api/assets - 获取资产列表
 router.get('/', assetController.getAssets);
 
-// GET /api/assets/:id - 获取单个资产
-router.get('/:id', assetController.getAsset);
+// GET /api/assets/list - 兼容旧客户端/调试入口，必须在 /:id 前
+router.get('/list', assetController.getAssets);
 
-// DELETE /api/assets/:id - 删除资产
-router.delete('/:id', assetController.deleteAsset);
+// POST /api/assets/register-tileset - 注册 3D Tiles，必须在 /:id 前
+router.post('/register-tileset', assetController.registerTileset);
 
-// GET /api/assets/:id/download - 下载资产
+// GET /api/assets/:id/download - 下载资产，必须在 /:id 前
 router.get('/:id/download', assetController.downloadAsset);
 
-// GET /api/assets/:id/status - 获取处理状态
+// GET /api/assets/:id/status - 获取处理状态，必须在 /:id 前
 router.get('/:id/status', assetController.getProcessingStatus);
 
 // POST /api/assets/:id/reprocess - 重新处理资产
@@ -34,7 +34,10 @@ router.post('/:id/reprocess', assetController.reprocessAsset);
 // POST /api/assets/:id/thumbnail - 上传缩略图 (延迟生成)
 router.post('/:id/thumbnail', upload.single('thumbnail'), assetController.uploadThumbnail);
 
-// POST /api/assets/register-tileset - 注册 3D Tiles
-router.post('/register-tileset', assetController.registerTileset);
+// GET /api/assets/:id - 获取单个资产
+router.get('/:id', assetController.getAsset);
+
+// DELETE /api/assets/:id - 删除资产
+router.delete('/:id', assetController.deleteAsset);
 
 module.exports = router;

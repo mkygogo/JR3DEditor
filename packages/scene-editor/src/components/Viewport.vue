@@ -34,6 +34,44 @@ function setNestedVal(obj, path, value) {
   cur[parts[parts.length - 1]] = value;
 }
 
+/**
+ * Auto-populate ObjectInfoPanel widgets with custom properties of the selected object.
+ * For widgets with autoCustomFields enabled + context-selected binding mode,
+ * base fields (with explicit path mappings) retain their values from the binding system,
+ * and custom properties are appended dynamically.
+ */
+function autoPopulateObjectInfoPanels(objectId) {
+  const sm = window.editor?.sceneManager;
+  if (!sm) return;
+  const widgets = sm.hudConfig?.widgets;
+  if (!widgets) return;
+
+  const object = objectId ? sm.getObjectByUUID(objectId) : null;
+
+  for (const widget of widgets) {
+    if (widget.type !== 'object-info-panel') continue;
+    if (!widget.data?.autoCustomFields) continue;
+    const binding = widget.dataBinding;
+    if (!binding || binding.mode !== 'context-selected') continue;
+
+    const baseFields = (widget.data.fields || []).filter(f => f.path && !f.path.startsWith('custom.'));
+    let customFields = [];
+
+    if (object) {
+      const customProps = object.userData?.customProperties || [];
+      customFields = customProps.map(prop => ({
+        label: prop.label || prop.key,
+        value: prop.value ?? '-',
+        path: `custom.${prop.key}`,
+        _auto: true,
+      }));
+    }
+
+    const updatedFields = [...baseFields, ...customFields];
+    hudStore.updateWidget(widget.id, { data: { ...widget.data, fields: updatedFields } });
+  }
+}
+
 const container = ref(null);
 const canvas = ref(null);
 const editorStore = useEditorStore();
@@ -58,6 +96,29 @@ window.editor = {};
  * 计算拖放位置
  * 优先检测场景对象表面，fallback 到 Y=0 平面
  */
+
+/**
+ * Keep newly dropped models visible without changing normally scaled assets.
+ * Some uploaded CAD/GLB files arrive in very small units and look like they were not added.
+ */
+const normalizeDroppedModel = (object) => {
+  const box = new THREE.Box3().setFromObject(object);
+  if (box.isEmpty()) return;
+
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  if (!Number.isFinite(maxDim) || maxDim <= 0) return;
+
+  // Scale only genuinely tiny assets. Preserve source hierarchy transforms.
+  if (maxDim < 0.5) {
+    const targetSize = 2;
+    const factor = targetSize / maxDim;
+    object.scale.multiplyScalar(factor);
+    object.userData.autoScaledOnDrop = true;
+    object.userData.autoScaleFactor = factor;
+  }
+};
+
 const getDropPosition = (event) => {
   const rect = canvas.value.getBoundingClientRect();
   const screenPos = new THREE.Vector2(
@@ -93,10 +154,20 @@ const onDrop = async (event) => {
   let object;
 
   if (type === 'GLTFModel') {
-    // Load GLTF model
+    // Load GLTF model. Prefer processed/compressed assets, then fall back to the raw upload.
     const url = event.dataTransfer.getData('url');
+    const fallbackUrl = event.dataTransfer.getData('fallbackUrl');
     try {
-      object = await persistenceManager.loadGLTFModel(url);
+      try {
+        object = await persistenceManager.loadGLTFModel(url);
+      } catch (primaryError) {
+        if (!fallbackUrl || fallbackUrl === url) throw primaryError;
+        console.warn('Compressed GLTF load failed, retrying raw asset:', primaryError);
+        object = await persistenceManager.loadGLTFModel(fallbackUrl);
+      }
+
+      object.name = event.dataTransfer.getData('name') || object.name || 'GLTF Model';
+      normalizeDroppedModel(object);
       
       // 使用统一的放置位置计算
       const dropPosition = getDropPosition(event);
@@ -182,9 +253,20 @@ onMounted(async () => {
           hudStore.updateWidget(payload.widgetId, { data: updated });
         }
       }
+      if (type === 'context:object-changed') {
+        // Auto-populate ObjectInfoPanel custom fields when selected object changes
+        autoPopulateObjectInfoPanels(payload.newObjectId);
+      }
     },
   });
   bindingManager.start();
+
+  // Listen for custom property edits to refresh ObjectInfoPanel auto fields
+  sceneManager.on('object:custom-data', (data) => {
+    if (data?.object && data.object === editorStore.selectedObject) {
+      autoPopulateObjectInfoPanels(data.object.uuid);
+    }
+  });
 
   window.editor = {
     sceneManager,

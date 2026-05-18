@@ -24,3 +24,13 @@ gitRule.txt
 **/.vitepress/dist/
 
 test/
+
+# Local runtime files
+.codex-run/
+meteor3d-server/.env
+.env
+.env.*
+# Production deployment secrets and local backups
+deploy/ssl/
+test.shjrinfo.com_nginx.zip
+docker/nginx.conf.bak-*

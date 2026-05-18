@@ -2,7 +2,7 @@
   <div class="app-container">
     <div class="header">
       <router-link to="/scenes" class="home-link">← 返回场景列表</router-link>
-      <h1>Meteor3D Editor</h1>
+      <h1>JR数字孪生开发平台</h1>
       <Toolbar />
     </div>
     <div class="main-content">

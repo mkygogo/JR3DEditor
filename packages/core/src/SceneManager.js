@@ -816,6 +816,22 @@ export class SceneManager {
     }
 
     /**
+     * 将射线命中的子网格解析为场景树中的顶层可选对象。
+     * GLB/3D Tiles 等模型在编辑器和门户中都应作为一个整体参与选择和绑定。
+     * @param {THREE.Object3D} object - 命中的对象或子对象
+     * @returns {THREE.Object3D|null}
+     */
+    resolveSceneObject(object) {
+        let current = object;
+        while (current) {
+            if (this.objects.includes(current)) return current;
+            if (current.userData?.modelType === 'GLTF' || current.userData?.modelType === 'Tileset') return current;
+            current = current.parent;
+        }
+        return object || null;
+    }
+
+    /**
      * 获取当前相机视角
      * @param {Function} [callback] - 可选的回调函数，接收 view 对象
      * @returns {{position: {x,y,z}, target: {x,y,z}}}

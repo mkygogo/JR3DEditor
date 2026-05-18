@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH || '/',
     plugins: [
         vue(),
         vueDevTools(),
@@ -16,14 +17,14 @@ export default defineConfig({
         }
     },
     server: {
-        port: 5177,
+        port: 6177,
         proxy: {
             '/api': {
-                target: 'http://localhost:3001',
+                target: 'http://localhost:6001',
                 changeOrigin: true
             },
             '/uploads': {
-                target: 'http://localhost:3001',
+                target: 'http://localhost:6001',
                 changeOrigin: true
             }
         }

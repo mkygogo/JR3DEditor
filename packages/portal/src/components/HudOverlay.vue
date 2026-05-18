@@ -5,7 +5,11 @@
       :key="widget.id"
       class="widget-wrapper"
       :style="getWidgetStyle(widget)"
-      @click="onWidgetClick($event, widget)"
+      @pointerdown.stop.prevent
+      @pointerup.stop.prevent
+      @mousedown.stop.prevent
+      @touchstart.stop.prevent
+      @click.stop.prevent="onWidgetClick($event, widget)"
     >
       <WidgetRenderer :widget="mergedWidget(widget)" />
     </div>
@@ -27,8 +31,20 @@ const widgets = computed(() => props.hudConfig?.widgets || [])
 const emit = defineEmits(['widget-click'])
 
 function onWidgetClick(e, widget) {
-  props.bindingManager?.dispatchWidgetTrigger(widget.id, 'click', { event: e });
-  emit('widget-click', { widgetId: widget.id, event: e });
+  e?.stopPropagation?.()
+  e?.preventDefault?.()
+
+  try {
+    const results = props.bindingManager?.dispatchWidgetTrigger(widget.id, 'click', { event: e }) || []
+    const failed = results.find(result => !result.success)
+    if (failed) {
+      console.warn('[HudOverlay] widget action failed:', failed)
+    }
+  } catch (err) {
+    console.warn('[HudOverlay] widget click failed:', err)
+  }
+
+  emit('widget-click', { widgetId: widget.id, event: e })
 }
 
 /** Merge live binding data into widget.data without mutating original */

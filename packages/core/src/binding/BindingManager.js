@@ -387,8 +387,21 @@ export class BindingManager {
 
     const object = state.resolvedObject
     if (!object) {
-      mState.currentValue = mState.defaultValue
+      const oldValue = mState.currentValue
+      const fallbackValue = mState.defaultValue
+      mState.currentValue = fallbackValue
       mState.status = BINDING_STATUS.DEGRADED
+      if (oldValue !== fallbackValue) {
+        this._emitEvent('binding:value-updated', {
+          widgetId: state.widgetId,
+          mappingId,
+          widgetField: mState.widgetField,
+          objectPath: mState.objectPath,
+          oldValue,
+          newValue: fallbackValue,
+          direction: 'read',
+        })
+      }
       return
     }
 
@@ -468,12 +481,14 @@ export class BindingManager {
     const onTransform = (data) => this._onObjectTransform(data)
     const onRenamed = (data) => this._onObjectRenamed(data)
     const onVisibility = (data) => this._onObjectVisibility(data)
+    const onCustomData = (data) => this._onObjectCustomData(data)
     const onSelected = (data) => this._onObjectSelected(data)
     const onRemoved = (data) => this._onObjectRemoved(data)
 
     this.sceneManager.on('object:transform', onTransform)
     this.sceneManager.on('object:renamed', onRenamed)
     this.sceneManager.on('object:visibility', onVisibility)
+    this.sceneManager.on('object:custom-data', onCustomData)
     this.sceneManager.on('object:selected', onSelected)
     this.sceneManager.on('object:removed', onRemoved)
 
@@ -481,6 +496,7 @@ export class BindingManager {
       ['object:transform', onTransform],
       ['object:renamed', onRenamed],
       ['object:visibility', onVisibility],
+      ['object:custom-data', onCustomData],
       ['object:selected', onSelected],
       ['object:removed', onRemoved],
     ]
@@ -509,11 +525,17 @@ export class BindingManager {
     this._syncWidgetsForObject(data.object, ['visible'])
   }
 
+  _onObjectCustomData(data) {
+    if (!data?.object) return
+    this._syncWidgetsForObject(data.object, ['custom'])
+  }
+
   _onObjectSelected(data) {
     const newObject = data?.object || null
     const newId = newObject?.uuid || null
 
-    if (newId === this._lastContextObjectId) return
+    const oldId = this._lastContextObjectId
+    if (newId === oldId) return
     this._lastContextObjectId = newId
 
     // 更新所有 context-selected 绑定
@@ -529,7 +551,7 @@ export class BindingManager {
 
     this._emitEvent('context:object-changed', {
       newObjectId: newId,
-      oldObjectId: this._lastContextObjectId,
+      oldObjectId: oldId,
       affectedWidgets,
     })
   }

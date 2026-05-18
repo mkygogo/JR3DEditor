@@ -42,7 +42,7 @@
         :key="model._id"
         class="item" 
         draggable="true" 
-        @dragstart="onDragStart($event, 'GLTFModel', getAssetUrl(model))"
+        @dragstart="onDragStart($event, 'GLTFModel', getAssetUrl(model), model.name, getRawAssetUrl(model))"
         :title="model.originalName"
       >
         🎨 {{ model.name }}
@@ -115,10 +115,16 @@ const environments = ref([]);
 const tilesets = ref([]);
 const loading = ref(false);
 
-const onDragStart = (event, type, url = null) => {
+const onDragStart = (event, type, url = null, name = '', fallbackUrl = null) => {
   event.dataTransfer.setData('type', type);
   if (url) {
     event.dataTransfer.setData('url', url);
+  }
+  if (fallbackUrl && fallbackUrl !== url) {
+    event.dataTransfer.setData('fallbackUrl', fallbackUrl);
+  }
+  if (name) {
+    event.dataTransfer.setData('name', name);
   }
 };
 
@@ -129,6 +135,8 @@ const getAssetUrl = (asset) => {
   }
   return _getAssetUrl(asset);
 };
+
+const getRawAssetUrl = (asset) => _getAssetUrl(asset);
 
 const loadAssets = async () => {
   loading.value = true;

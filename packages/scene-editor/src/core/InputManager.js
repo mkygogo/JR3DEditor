@@ -21,6 +21,10 @@ export class InputManager {
      * 执行射线检测并选择对象
      * @param {PointerEvent} event - 指针事件
      */
+    resolveSelectableObject(object) {
+        return this.sceneManager.resolveSceneObject?.(object) || object;
+    }
+
     onPointerDown(event) {
         if (event.button !== 0) return; // 仅响应左键点击
 
@@ -35,8 +39,7 @@ export class InputManager {
         const intersects = this.sceneManager.raycastObjects(this.mouse, { recursive: true });
 
         if (intersects.length > 0) {
-            // 直接选中被点击的对象（可能是子节点）
-            const selectedObject = intersects[0].object;
+            const selectedObject = this.resolveSelectableObject(intersects[0].object);
             this.editorStore.selectObject(selectedObject);
         } else {
             this.editorStore.clearSelection();

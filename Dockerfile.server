@@ -1,0 +1,12 @@
+FROM node:20-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production \
+    npm_config_registry=https://registry.npmmirror.com \
+    npm_config_sharp_binary_host=https://npmmirror.com/mirrors/sharp \
+    npm_config_sharp_libvips_binary_host=https://npmmirror.com/mirrors/sharp-libvips
+COPY meteor3d-server/package*.json ./
+RUN npm ci --omit=dev --fetch-retries=5 --fetch-retry-maxtimeout=120000
+COPY meteor3d-server/ ./
+RUN mkdir -p uploads/models uploads/thumbnails uploads/raw uploads/processed/models uploads/processed/lods uploads/processed/textures uploads/temp uploads/basemaps
+EXPOSE 6001
+CMD ["node", "app.js"]

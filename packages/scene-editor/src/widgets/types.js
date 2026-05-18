@@ -19,6 +19,7 @@ export const WIDGET_TYPES = {
   PIE_CHART: 'pie-chart',
   DATA_TABLE: 'data-table',
   ALERT_LIST: 'alert-list',
+  OBJECT_INFO_PANEL: 'object-info-panel',
 }
 
 // ── 类型分类 ──
@@ -36,6 +37,7 @@ export const WIDGET_CATEGORIES = {
   data: {
     label: '数据展示',
     types: [
+      WIDGET_TYPES.OBJECT_INFO_PANEL,
       WIDGET_TYPES.STAT_CARD,
       WIDGET_TYPES.PROGRESS_BAR,
       WIDGET_TYPES.GAUGE_CHART,
@@ -73,6 +75,7 @@ export const WIDGET_META = {
   [WIDGET_TYPES.PIE_CHART]: { label: '饼图', icon: '🍩', defaultW: 16, defaultH: 20 },
   [WIDGET_TYPES.DATA_TABLE]: { label: '数据表', icon: '📋', defaultW: 18, defaultH: 22 },
   [WIDGET_TYPES.ALERT_LIST]: { label: '报警列表', icon: '🚨', defaultW: 16, defaultH: 20 },
+  [WIDGET_TYPES.OBJECT_INFO_PANEL]: { label: '对象信息', icon: 'ⓘ', defaultW: 22, defaultH: 24 },
 }
 
 // ── 每种类型的默认 data ──
@@ -115,6 +118,18 @@ export const WIDGET_DEFAULTS = {
     unit: '',
     icon: '🅿️',
     color: '#00d4ff',
+  },
+  [WIDGET_TYPES.OBJECT_INFO_PANEL]: {
+    title: '对象信息',
+    emptyText: '请选择场景对象',
+    autoCustomFields: true,
+    fields: [
+      { label: '名称', value: '-', path: 'name' },
+      { label: '类型', value: '-', path: 'type' },
+      { label: 'X 坐标', value: '-', path: 'position.x' },
+      { label: 'Y 坐标', value: '-', path: 'position.y' },
+      { label: 'Z 坐标', value: '-', path: 'position.z' },
+    ],
   },
   [WIDGET_TYPES.GAUGE_CHART]: {
     label: '用电负荷',
@@ -193,9 +208,32 @@ export function createWidget(type, overrides = {}) {
     width: overrides.width ?? meta.defaultW,
     height: overrides.height ?? meta.defaultH,
     data: { ...defaults, ...(overrides.data || {}) },
-    dataBinding: { type: 'static' },
+    dataBinding: overrides.dataBinding || getDefaultDataBinding(type, { ...defaults, ...(overrides.data || {}) }),
     style: { ...DEFAULT_STYLE, ...(overrides.style || {}) },
     actions: [],
+  }
+}
+
+function getDefaultDataBinding(type, data) {
+  if (type !== WIDGET_TYPES.OBJECT_INFO_PANEL) {
+    return { version: 1, mode: 'static', source: { objectId: null, objectName: null }, mappings: [], updatePolicy: 'event' }
+  }
+
+  return {
+    version: 1,
+    mode: 'context-selected',
+    source: { objectId: null, objectName: null },
+    updatePolicy: 'event',
+    mappings: (data.fields || []).map((field, index) => ({
+      id: `m_${Math.random().toString(36).slice(2, 10)}`,
+      widgetField: `data.fields.${index}.value`,
+      objectPath: field.path || 'name',
+      direction: 'read',
+      valueType: 'string',
+      transform: { read: null, write: null },
+      defaultValue: '-',
+      readOnlyWhenInvalid: true,
+    })),
   }
 }
 

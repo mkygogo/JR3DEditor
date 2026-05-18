@@ -20,6 +20,12 @@
       @update:modelValue="onUpdate"
     />
 
+    <!-- Auto custom fields toggle (ObjectInfoPanel only) -->
+    <div v-if="widget.type === 'object-info-panel' && binding.mode !== 'static'" class="field-row">
+      <label>自动展示自定义属性</label>
+      <input type="checkbox" v-model="autoCustomFields" @change="onAutoFieldsToggle" />
+    </div>
+
     <!-- Mappings -->
     <div class="mappings-section">
       <div class="section-header">
@@ -54,7 +60,7 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useHudStore } from '../stores/hudStore.js'
 import { createDefaultMapping } from '@meteor3d/core'
 import ObjectPicker from './ObjectPicker.vue'
@@ -72,6 +78,8 @@ const binding = reactive({
   mappings: []
 })
 
+const autoCustomFields = ref(true)
+
 // Hydrate from widget
 watch(() => props.widget, (w) => {
   if (!w) return
@@ -79,7 +87,13 @@ watch(() => props.widget, (w) => {
   binding.mode = db.mode || 'static'
   binding.source = { objectId: db.source?.objectId || '' }
   binding.mappings = (db.mappings || []).map(m => ({ ...m }))
+  autoCustomFields.value = w.data?.autoCustomFields !== false
 }, { immediate: true, deep: false })
+
+function onAutoFieldsToggle() {
+  if (!props.widget) return
+  hudStore.updateWidget(props.widget.id, { data: { ...props.widget.data, autoCustomFields: autoCustomFields.value } })
+}
 
 function onUpdate() {
   if (!props.widget) return

@@ -7,7 +7,7 @@
       @click.stop="handleSelect"
     >
       <!-- 展开/折叠按钮 -->
-      <span browse
+      <span
         v-if="hasChildren" 
         class="expand-icon"
         @click.stop="toggleExpand"
@@ -68,9 +68,12 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'delete']);
 
-const expanded = ref(false); // 默认展开
+const expanded = ref(false); // 默认折叠
+
+const isModelRoot = computed(() => props.node.userData?.modelType === 'GLTF' || props.node.userData?.modelType === 'Tileset');
 
 const hasChildren = computed(() => {
+  if (isModelRoot.value) return false;
   return props.node.children && props.node.children.length > 0;
 });
 
@@ -88,7 +91,11 @@ const handleDelete = () => {
 
 const getIcon = () => {
   // 根据对象类型返回不同图标
-  if (props.node.type === 'Group' || props.node.userData?.modelType === 'GLTF') {
+  if (props.node.userData?.modelType === 'GLTF') {
+    return '🎨';
+  } else if (props.node.userData?.modelType === 'Tileset') {
+    return '🌐';
+  } else if (props.node.type === 'Group') {
     return '📁';
   } else if (props.node.isMesh) {
     return '🔷';

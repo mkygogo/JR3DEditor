@@ -54,6 +54,26 @@ const publishedViewUrl = ref('');
 
 const sceneId = () => route.params.sceneId;
 
+const trimTrailingSlash = (value) => value.replace(/\/+$/, '');
+
+const getPortalBaseUrl = () => {
+  const configured = import.meta.env.VITE_PORTAL_BASE_URL?.trim();
+  if (configured) {
+    return trimTrailingSlash(configured);
+  }
+
+  if (import.meta.env.PROD) {
+    return `${window.location.origin}/portal`;
+  }
+
+  return window.location.origin.replace(/:\d+$/, ':6177');
+};
+
+const buildPublishedViewUrl = (viewUrl) => {
+  const path = viewUrl?.startsWith('/') ? viewUrl : `/${viewUrl || ''}`;
+  return `${getPortalBaseUrl()}${path}`;
+};
+
 // 检查当前发布状态
 const checkPublishStatus = async () => {
   try {
@@ -71,9 +91,7 @@ const handlePublish = async () => {
     await save(true);
     const result = await publishScene(sceneId());
     isPublished.value = true;
-    // 门户运行在 5177 端口
-    const portalOrigin = window.location.origin.replace(/:\d+$/, ':5177');
-    publishedViewUrl.value = `${portalOrigin}${result.viewUrl}`;
+    publishedViewUrl.value = buildPublishedViewUrl(result.viewUrl);
     showPublishLink.value = true;
     message.success('场景已发布！');
   } catch (e) {

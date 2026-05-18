@@ -1,0 +1,66 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: jr3d-frontend:latest
+    container_name: jr3d-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./deploy/ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    image: jr3d-backend:latest
+    container_name: jr3d-backend
+    environment:
+      PORT: 6001
+      MONGODB_URI: mongodb://root:${MONGO_ROOT_PASSWORD:-jr3dMongo2026}@mongo:27017/meteor3d?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-jr3dRedis2026}
+      UPYUN_SERVICE_NAME: ${UPYUN_SERVICE_NAME:-}
+      UPYUN_OPERATOR_NAME: ${UPYUN_OPERATOR_NAME:-}
+      UPYUN_PASSWORD: ${UPYUN_PASSWORD:-}
+      UPYUN_DOMAIN: ${UPYUN_DOMAIN:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_AI_KEY: ${GOOGLE_AI_KEY:-}
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY:-disabled}
+    depends_on:
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+    volumes:
+      - backend_uploads:/app/uploads
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: jr3d-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-jr3dMongo2026}
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: jr3d-redis
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-jr3dRedis2026}"]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  backend_uploads:
+  mongo_data:
+  redis_data:

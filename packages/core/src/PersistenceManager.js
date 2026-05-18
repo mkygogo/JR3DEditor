@@ -109,6 +109,7 @@ export class PersistenceManager {
                 position: { x: object.position.x, y: object.position.y, z: object.position.z },
                 rotation: { x: object.rotation.x, y: object.rotation.y, z: object.rotation.z },
                 scale: { x: object.scale.x, y: object.scale.y, z: object.scale.z },
+                customProperties: this.cloneCustomProperties(object),
                 modifications: this.extractModifications(object)
             };
         } else if (object.userData.modelType === 'Tileset') {
@@ -121,6 +122,7 @@ export class PersistenceManager {
                 position: { x: object.position.x, y: object.position.y, z: object.position.z },
                 rotation: { x: object.rotation.x, y: object.rotation.y, z: object.rotation.z },
                 scale: { x: object.scale.x, y: object.scale.y, z: object.scale.z },
+                customProperties: this.cloneCustomProperties(object),
                 gisCenter: object.userData.gisCenter || null  // 保存提取的 GIS 中心点
             };
         } else {
@@ -132,6 +134,7 @@ export class PersistenceManager {
                 position: { x: object.position.x, y: object.position.y, z: object.position.z },
                 rotation: { x: object.rotation.x, y: object.rotation.y, z: object.rotation.z },
                 scale: { x: object.scale.x, y: object.scale.y, z: object.scale.z },
+                customProperties: this.cloneCustomProperties(object),
                 geometry: { type: object.geometry?.type, parameters: object.geometry?.parameters },
                 material: {
                     color: object.material?.color?.getHex(),
@@ -152,6 +155,17 @@ export class PersistenceManager {
                 }
             };
         }
+    }
+
+    cloneCustomProperties(object) {
+        const props = object.userData?.customProperties;
+        return Array.isArray(props) ? props.map(item => ({ ...item })) : [];
+    }
+
+    restoreCustomProperties(object, data) {
+        object.userData.customProperties = Array.isArray(data.customProperties)
+            ? data.customProperties.map(item => ({ ...item }))
+            : [];
     }
 
     /**
@@ -248,6 +262,7 @@ export class PersistenceManager {
             model.position.set(data.position.x, data.position.y, data.position.z);
             model.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
             model.scale.set(data.scale.x, data.scale.y, data.scale.z);
+            this.restoreCustomProperties(model, data);
             if (data.modifications) {
                 this.applyModifications(model, data.modifications);
             }
@@ -260,6 +275,7 @@ export class PersistenceManager {
             tileset.position.set(data.position.x, data.position.y, data.position.z);
             tileset.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
             tileset.scale.set(data.scale.x, data.scale.y, data.scale.z);
+            this.restoreCustomProperties(tileset, data);
             return tileset;
         } else {
             let geometry;
@@ -297,6 +313,7 @@ export class PersistenceManager {
             mesh.position.set(data.position.x, data.position.y, data.position.z);
             mesh.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
             mesh.scale.set(data.scale.x, data.scale.y, data.scale.z);
+            this.restoreCustomProperties(mesh, data);
             return mesh;
         }
     }
@@ -317,18 +334,33 @@ export class PersistenceManager {
                 url,
                 (gltf) => {
                     console.log('GLTF 模型加载成功:', url);
-                    gltf.scene.position.set(0, 0, 0);
-                    // 确保模型根节点的位置也归零，以避免加载时偏移
-                    if (gltf.scene.children.length > 0) {
-                        gltf.scene.children[0].position.set(0, 0, 0);
+
+                    const sourceScene = gltf.scene;
+                    sourceScene.position.set(0, 0, 0);
+
+                    // Wrap the imported GLB in an editor-owned root object. The wrapper is the
+                    // selectable/transformable scene object, while the original GLB hierarchy is
+                    // preserved as visual content. Centering the visual content keeps the gizmo,
+                    // coordinates, and visible model aligned without destroying child transforms.
+                    const wrapper = new THREE.Group();
+                    wrapper.name = sourceScene.name && sourceScene.name !== 'Scene' ? sourceScene.name : 'GLTF Model';
+                    wrapper.userData.modelType = 'GLTF';
+                    wrapper.userData.modelUrl = url;
+                    wrapper.userData.sourceSceneName = sourceScene.name || '';
+
+                    const box = new THREE.Box3().setFromObject(sourceScene);
+                    if (!box.isEmpty()) {
+                        const center = box.getCenter(new THREE.Vector3());
+                        sourceScene.position.sub(center);
+                        wrapper.userData.visualCenterOffset = { x: center.x, y: center.y, z: center.z };
                     }
-                    const model = gltf.scene;
-                    model.userData.modelType = 'GLTF';
-                    model.userData.modelUrl = url;
-                    // 缓存原始模型作为模板
-                    this.modelCache.set(url, model);
+
+                    wrapper.add(sourceScene);
+
+                    // 缓存包装后的模型作为模板
+                    this.modelCache.set(url, wrapper);
                     // 返回克隆的副本，确保每个实例独立且支持骨骼动画
-                    resolve(SkeletonUtils.clone(model));
+                    resolve(SkeletonUtils.clone(wrapper));
                 },
                 (progress) => {
                     if (progress.total > 0) {
@@ -541,6 +573,7 @@ export class PersistenceManager {
 
         // 清空当前场景
         this.sceneManager.clearScene();
+        this.sceneManager.hudConfig = null;
         this.editorStore.clearSelection();
         if (typeof this.editorStore.resetObjects === 'function') {
             this.editorStore.resetObjects();

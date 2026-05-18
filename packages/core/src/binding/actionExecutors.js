@@ -18,28 +18,29 @@ executors.set(ACTION_TYPE.HIGHLIGHT, (sceneManager, object, payload = {}) => {
     durationMs = 2000,
     autoRestore = true,
   } = payload
+  const highlightColor = parseInt(color.replace('#', ''), 16)
 
-  // 优先使用 OutlineManager，fallback 到 HighlightManager
-  if (sceneManager.outlineManager) {
-    sceneManager.outlineManager.enable(object, {
-      color: parseInt(color.replace('#', ''), 16),
-      strength: intensity * 6,
-    })
-
-    if (autoRestore && durationMs > 0) {
-      setTimeout(() => {
-        sceneManager.outlineManager.disable(object)
-      }, durationMs)
-    }
-  } else if (sceneManager.highlightManager) {
+  // HUD 点击发生在运行态展示页，优先使用轻量材质高亮，避免 OutlinePass 在大场景中触发后处理卡顿。
+  if (sceneManager.highlightManager) {
     sceneManager.highlightManager.enable(object, {
-      color: parseInt(color.replace('#', ''), 16),
+      color: highlightColor,
       intensity,
     })
 
     if (autoRestore && durationMs > 0) {
       setTimeout(() => {
         sceneManager.highlightManager.disable(object)
+      }, durationMs)
+    }
+  } else if (sceneManager.outlineManager) {
+    sceneManager.outlineManager.enable(object, {
+      color: highlightColor,
+      strength: intensity * 6,
+    })
+
+    if (autoRestore && durationMs > 0) {
+      setTimeout(() => {
+        sceneManager.outlineManager.disable(object)
       }, durationMs)
     }
   }
@@ -127,7 +128,7 @@ executors.set(ACTION_TYPE.SET_PROPERTY, (sceneManager, object, payload = {}, con
   }
 
   // 触发变换事件
-  if (sceneManager.emit && objectPath.startsWith('position') || objectPath.startsWith('rotation') || objectPath.startsWith('scale')) {
+  if (sceneManager.emit && (objectPath.startsWith('position') || objectPath.startsWith('rotation') || objectPath.startsWith('scale'))) {
     const prop = objectPath.split('.')[0]
     sceneManager.emit('object:transform', { object, property: prop })
   }

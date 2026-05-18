@@ -28,13 +28,14 @@ export const ALLOWED_PATHS = {
  * 检查路径是否在白名单内
  */
 export function isPathAllowed(path) {
-  return path in ALLOWED_PATHS
+  return path in ALLOWED_PATHS || isCustomPath(path)
 }
 
 /**
  * 检查路径是否可写
  */
 export function isPathWritable(path) {
+  if (isCustomPath(path)) return true
   const entry = ALLOWED_PATHS[path]
   return entry ? entry.writable : false
 }
@@ -43,6 +44,7 @@ export function isPathWritable(path) {
  * 获取路径的值类型
  */
 export function getPathValueType(path) {
+  if (isCustomPath(path)) return VALUE_TYPE.STRING
   const entry = ALLOWED_PATHS[path]
   return entry ? entry.valueType : null
 }
@@ -59,6 +61,11 @@ export function readObjectPath(object, path) {
   }
   if (!isPathAllowed(path)) {
     return { value: undefined, error: BINDING_ERR.E_INVALID_PATH }
+  }
+
+  if (isCustomPath(path)) {
+    const key = getCustomKey(path)
+    return { value: readCustomProperty(object, key), error: null }
   }
 
   switch (path) {
@@ -116,6 +123,12 @@ export function writeObjectPath(object, path, value) {
   }
 
   let clamped = false
+
+  if (isCustomPath(path)) {
+    const key = getCustomKey(path)
+    writeCustomProperty(object, key, value)
+    return { success: true, error: null, clamped: false }
+  }
 
   switch (path) {
     case 'name':
@@ -196,11 +209,42 @@ export function writeObjectPath(object, path, value) {
 /**
  * 获取分组后的白名单路径列表（供 UI 选择器使用）
  */
-export function getGroupedPaths() {
-  return [
+export function getGroupedPaths(customProperties = []) {
+  const groups = [
     { group: '基础', paths: ['name', 'visible', 'type'] },
     { group: '位置', paths: ['position', 'position.x', 'position.y', 'position.z'] },
     { group: '旋转', paths: ['rotation', 'rotation.x', 'rotation.y', 'rotation.z'] },
     { group: '缩放', paths: ['scale', 'scale.x', 'scale.y', 'scale.z'] },
   ]
+
+  const customPaths = customProperties
+    .filter(item => item?.key)
+    .map(item => `custom.${item.key}`)
+  if (customPaths.length > 0) groups.push({ group: '自定义', paths: customPaths })
+  return groups
+}
+
+export function isCustomPath(path) {
+  return typeof path === 'string' && /^custom\.[A-Za-z0-9_-]+$/.test(path)
+}
+
+function getCustomKey(path) {
+  return path.slice('custom.'.length)
+}
+
+function readCustomProperty(object, key) {
+  const props = object.userData?.customProperties || []
+  const found = props.find(item => item.key === key)
+  return found ? found.value : undefined
+}
+
+function writeCustomProperty(object, key, value) {
+  if (!object.userData) object.userData = {}
+  if (!Array.isArray(object.userData.customProperties)) object.userData.customProperties = []
+  const found = object.userData.customProperties.find(item => item.key === key)
+  if (found) {
+    found.value = value
+  } else {
+    object.userData.customProperties.push({ key, label: key, value })
+  }
 }

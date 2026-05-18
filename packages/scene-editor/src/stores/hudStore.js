@@ -193,7 +193,14 @@ export const useHudStore = defineStore('hud', () => {
   // Restore from SceneManager after scene load
   function restoreFromScene() {
     const sm = window.editor?.sceneManager
-    if (sm?.hudConfig) {
+    if (!sm?.hudConfig) {
+      hudConfig.value = { enabled: false, widgets: [] }
+      selectedWidgetId.value = null
+      editMode.value = false
+      return
+    }
+
+    if (sm.hudConfig) {
       const config = JSON.parse(JSON.stringify(sm.hudConfig))
       // Migrate legacy zone-based widgets to free-position format
       if (config.widgets) {

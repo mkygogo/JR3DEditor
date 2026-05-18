@@ -202,6 +202,7 @@ import GaugeChartEditor from '../widgets/editors/GaugeChartEditor.vue'
 import ChartSeriesEditor from '../widgets/editors/ChartSeriesEditor.vue'
 import PieChartEditor from '../widgets/editors/PieChartEditor.vue'
 import DataTableEditor from '../widgets/editors/DataTableEditor.vue'
+import ObjectInfoPanelEditor from '../widgets/editors/ObjectInfoPanelEditor.vue'
 import AlertListEditor from '../widgets/editors/AlertListEditor.vue'
 import ContainerEditor from '../widgets/editors/ContainerEditor.vue'
 import ButtonEditor from '../widgets/editors/ButtonEditor.vue'
@@ -230,6 +231,7 @@ const dataEditorMap = {
   [WIDGET_TYPES.LINE_CHART]: ChartSeriesEditor,
   [WIDGET_TYPES.PIE_CHART]: PieChartEditor,
   [WIDGET_TYPES.DATA_TABLE]: DataTableEditor,
+  [WIDGET_TYPES.OBJECT_INFO_PANEL]: ObjectInfoPanelEditor,
   [WIDGET_TYPES.ALERT_LIST]: AlertListEditor,
   [WIDGET_TYPES.CONTAINER]: ContainerEditor,
   [WIDGET_TYPES.BUTTON]: ButtonEditor,

@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="header">
       <div class="header-inner">
-        <div class="logo">🌐 Meteor3D</div>
+        <div class="logo">🌐 JR数字孪生平台</div>
         <nav class="nav">
           <a href="/" class="nav-link active">展示门户</a>
         </nav>
@@ -90,7 +90,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <p>Meteor3D · 低代码 3D 场景可视化平台</p>
+      <p>JR数字孪生平台 · 低代码 3D 场景可视化平台</p>
     </footer>
   </div>
 </template>

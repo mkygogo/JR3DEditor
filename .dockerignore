@@ -1,0 +1,11 @@
+.git
+node_modules
+**/node_modules
+**/dist
+meteor3d
+.codex-run
+.vscode
+*.log
+.env
+meteor3d-server/.env
+meteor3d-server/uploads
