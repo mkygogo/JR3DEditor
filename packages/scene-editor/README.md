@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-`@meteor3d/scene-editor` 是 Meteor3D SaaS 平台的 **3D 场景编辑器**，用于可视化搭建 3D 场景。
+`@meteor3d/scene-editor` 是 JR数字孪生平台的 **3D 场景编辑器**，用于可视化搭建 3D 场景。
 
 ---
 

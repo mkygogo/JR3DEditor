@@ -268,7 +268,7 @@ exports.handleChatStream = async (req, res) => {
 
     try {
         const { id, session } = getSession(sessionId || "http-stream");
-        console.log(`\n[Meteor3D Stream Session ${id}] 用户: ${lastUserMsg}`);
+        console.log(`\n[JR数字孪生 Stream Session ${id}] 用户: ${lastUserMsg}`);
 
         // 追加用户的新输入
         session.messages.push({ role: "user", content: lastUserMsg });

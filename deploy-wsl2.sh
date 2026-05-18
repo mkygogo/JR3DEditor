@@ -2,11 +2,11 @@
 set -e
 
 echo "=========================================="
-echo "  Meteor3D WSL2 Deployment Script"
+echo "  JR Digital Twin WSL2 Deployment Script"
 echo "=========================================="
 
 PROJECT_DIR="$HOME/meteor3d"
-WIN_PROJECT="/mnt/g/WebGL/Meteor3DEditor/JR3DEditor"
+WIN_PROJECT="/mnt/g/WebGL/JR3DEditor/JR3DEditor"
 
 # ---- 1. Install Redis ----
 echo ""

@@ -1,11 +1,11 @@
-# Meteor3D
+# JR数字孪生平台
 
 <p align="center">
   <strong>🚀 低代码 3D 场景可视化编辑平台</strong>
 </p>
 
 <p align="center">
-  <a href="https://www.meteor3d.cn" target="_blank">🌐 官网演示</a> •
+  <a href="https://test.shjrinfo.com:8443/portal/" target="_blank">🌐 官网演示</a> •
   <a href="#功能特性">功能特性</a> •
   <a href="#快速开始">快速开始</a> •
   <a href="#技术栈">技术栈</a> •
@@ -119,7 +119,7 @@ cd meteor3d-server && node app.js
 ## 📂 项目结构
 
 ```
-Meteor3D/
+JR3DEditor/
 ├── packages/
 │   ├── core/                # @meteor3d/core 核心 SDK
 │   │   ├── SceneManager.js      # 场景管理器

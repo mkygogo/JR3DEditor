@@ -36,7 +36,7 @@ app.use('/api/portal', portalRoutes);
 
 // 根路由
 app.get('/', (req, res) => {
-    res.json({ message: 'Meteor3D 后端服务运行中' });
+    res.json({ message: 'JR数字孪生后端服务运行中' });
 });
 
 // 启动服务器

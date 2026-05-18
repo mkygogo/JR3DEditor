@@ -1,6 +1,6 @@
 # @meteor3d/asset-manager
 
-Meteor3D 资产管理系统 - 独立的 3D 资产管理应用。
+JR数字孪生资产管理系统 - 独立的 3D 资产管理应用。
 
 ---
 

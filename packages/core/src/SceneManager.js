@@ -1060,7 +1060,7 @@ export class SceneManager {
      */
     lngLatToWorld(lng, lat, height = 0) {
         if (!this.geoSystem) {
-            console.warn('[Meteor3D] GIS 未配置，无法使用经纬度坐标转换。请先调用 setGisConfig() 配置 GIS 中心点。');
+            console.warn('[JR数字孪生] GIS 未配置，无法使用经纬度坐标转换。请先调用 setGisConfig() 配置 GIS 中心点。');
             return null;
         }
         const { x, y, z } = this.geoSystem.project(lng, lat, height);
@@ -1075,7 +1075,7 @@ export class SceneManager {
      */
     worldToLngLat(worldPos) {
         if (!this.geoSystem) {
-            console.warn('[Meteor3D] GIS 未配置，无法使用坐标转换。请先调用 setGisConfig() 配置 GIS 中心点。');
+            console.warn('[JR数字孪生] GIS 未配置，无法使用坐标转换。请先调用 setGisConfig() 配置 GIS 中心点。');
             return null;
         }
         if (!worldPos) return null;

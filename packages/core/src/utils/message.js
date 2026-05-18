@@ -45,7 +45,7 @@ function showMessage(content, type = 'info', duration = 3000) {
 
     // 同时输出到控制台（用于调试）
     const consoleMethod = type === 'error' ? 'error' : type === 'warning' ? 'warn' : 'log';
-    console[consoleMethod](`[Meteor3D ${type.toUpperCase()}]`, content);
+    console[consoleMethod](`[JR数字孪生 ${type.toUpperCase()}]`, content);
 
     return id;
 }
