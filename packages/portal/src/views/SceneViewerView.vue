@@ -18,7 +18,7 @@
 
     <!-- 3D Canvas -->
     <div ref="canvasContainer" class="canvas-container">
-      <HudOverlay :hudConfig="hudConfig" />
+      <HudOverlay :hudConfig="hudConfig" :liveData="liveWidgetData" :bindingManager="bindingManagerRef" />
     </div>
 
     <!-- Loading overlay -->
@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getPublishedScene } from '../services/portalService';
 import HudOverlay from '../components/HudOverlay.vue';
@@ -51,7 +51,10 @@ const cameraMode = ref('orbit');
 const hudConfig = ref(null);
 
 let instance = null;
+let bindingManager = null;
 let statsEnabled = false;
+const liveWidgetData = reactive({});
+const bindingManagerRef = ref(null);
 
 onMounted(async () => {
   const slug = route.params.slug;
@@ -70,8 +73,29 @@ onMounted(async () => {
     });
 
     // Load HUD config from scene
-    if (instance?._internal?.sceneManager?.hudConfig) {
-      hudConfig.value = instance._internal.sceneManager.hudConfig;
+    const sm = instance?._internal?.sceneManager;
+    if (sm?.hudConfig) {
+      hudConfig.value = sm.hudConfig;
+
+      // Start binding manager in read-only mode
+      const { BindingManager } = await import('@meteor3d/core');
+      bindingManager = new BindingManager({
+        sceneManager: sm,
+        hudConfigProvider: () => sm.hudConfig,
+        selectionProvider: () => null,
+        objectResolver: (uuid) => sm.getObjectByUUID ? sm.getObjectByUUID(uuid) : sm.findObjectByUUID(uuid),
+        allowWriteBack: false,
+        onEvent: (type, payload) => {
+          if (type === 'binding:value-updated' && payload.direction === 'read') {
+            liveWidgetData[payload.widgetId] = {
+              ...(liveWidgetData[payload.widgetId] || {}),
+              [payload.widgetField]: payload.newValue,
+            };
+          }
+        },
+      });
+      bindingManager.start();
+      bindingManagerRef.value = bindingManager;
     }
 
     ready.value = true;
@@ -84,6 +108,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (bindingManager) { bindingManager.dispose(); bindingManager = null; }
   if (instance?.dispose) instance.dispose();
 });
 

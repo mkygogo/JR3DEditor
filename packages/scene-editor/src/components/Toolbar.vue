@@ -25,9 +25,6 @@
         :disabled="publishing"
       >⏹ 取消发布</button>
     </div>
-    <div class="group">
-      <button @click="toggleDebug" :class="{ active: debugEnabled }" title="性能调试 (FPS/Draw Calls)">🐛 调试</button>
-    </div>
 
     <!-- 发布成功提示 -->
     <div v-if="showPublishLink" class="publish-toast">
@@ -54,7 +51,6 @@ const isPublished = ref(false);
 const publishing = ref(false);
 const showPublishLink = ref(false);
 const publishedViewUrl = ref('');
-const debugEnabled = ref(false);
 
 const sceneId = () => route.params.sceneId;
 
@@ -121,23 +117,6 @@ const undo = () => {
 const redo = () => {
   if (window.editor && window.editor.historyManager) {
     window.editor.historyManager.redo();
-  }
-};
-
-const toggleDebug = () => {
-  debugEnabled.value = !debugEnabled.value;
-  if (window.editor && window.editor.sceneManager) {
-    window.editor.sceneManager.toggleStats(debugEnabled.value);
-    // 同时显示渲染信息
-    const info = window.editor.sceneManager.renderer?.info;
-    if (debugEnabled.value && info) {
-      console.log('[Debug] Render info:', {
-        triangles: info.render.triangles,
-        calls: info.render.calls,
-        textures: info.memory.textures,
-        geometries: info.memory.geometries
-      });
-    }
   }
 };
 

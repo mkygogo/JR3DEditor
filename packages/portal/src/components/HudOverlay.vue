@@ -5,8 +5,9 @@
       :key="widget.id"
       class="widget-wrapper"
       :style="getWidgetStyle(widget)"
+      @click="onWidgetClick($event, widget)"
     >
-      <WidgetRenderer :widget="widget" />
+      <WidgetRenderer :widget="mergedWidget(widget)" />
     </div>
   </div>
 </template>
@@ -16,10 +17,26 @@ import { computed } from 'vue'
 import WidgetRenderer from '@widgets/WidgetRenderer.vue'
 
 const props = defineProps({
-  hudConfig: { type: Object, default: null }
+  hudConfig: { type: Object, default: null },
+  liveData: { type: Object, default: () => ({}) },
+  bindingManager: { type: Object, default: null },
 })
 
 const widgets = computed(() => props.hudConfig?.widgets || [])
+
+const emit = defineEmits(['widget-click'])
+
+function onWidgetClick(e, widget) {
+  props.bindingManager?.dispatchWidgetTrigger(widget.id, 'click', { event: e });
+  emit('widget-click', { widgetId: widget.id, event: e });
+}
+
+/** Merge live binding data into widget.data without mutating original */
+function mergedWidget(w) {
+  const live = props.liveData?.[w.id]
+  if (!live) return w
+  return { ...w, data: { ...w.data, ...live } }
+}
 
 function getWidgetStyle(w) {
   const s = w.style || {}

@@ -22,6 +22,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     function selectObject(object) {
         selectedObject.value = object ? markRaw(object) : null;
+        window.editor?.sceneManager?.emit('object:selected', { object: object || null });
     }
 
     function clearSelection() {

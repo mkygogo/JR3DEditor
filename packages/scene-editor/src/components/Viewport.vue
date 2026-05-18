@@ -13,22 +13,36 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 import * as THREE from 'three';
-import { SceneManager, PersistenceManager, DBManager } from '@meteor3d/core';
+import { SceneManager, PersistenceManager, DBManager, BindingManager } from '@meteor3d/core';
 import { API_BASE_URL } from '../config';
 import { InputManager } from '../core/InputManager';
 import { TransformManager } from '../core/TransformManager';
 import { HistoryManager } from '../core/HistoryManager';
 import { AddObjectCommand } from '../core/CommandFactory';
 import { useEditorStore } from '../stores/editorStore';
+import { useHudStore } from '../stores/hudStore';
 import { storeToRefs } from 'pinia';
+
+/** Set a dotted-path value on an object (e.g. 'position.x') */
+function setNestedVal(obj, path, value) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (cur[parts[i]] == null) cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = value;
+}
 
 const container = ref(null);
 const canvas = ref(null);
 const editorStore = useEditorStore();
+const hudStore = useHudStore();
 const { selectedObject } = storeToRefs(editorStore);
 const route = useRoute();
 
 let sceneManager = null;
+let bindingManager = null;
 let inputManager = null;
 let transformManager = null;
 let historyManager = null;
@@ -150,13 +164,36 @@ onMounted(async () => {
   transformManager = new TransformManager(sceneManager, historyManager, persistenceManager);
   inputManager = new InputManager(sceneManager, editorStore, transformManager);
 
+  // Init binding manager
+  bindingManager = new BindingManager({
+    sceneManager,
+    hudConfigProvider: () => window.editor?.sceneManager?.hudConfig || null,
+    selectionProvider: () => editorStore.selectedObject,
+    objectResolver: (uuid) => sceneManager.getObjectByUUID(uuid),
+    allowWriteBack: true,
+    onEvent: (type, payload) => {
+      if (type === 'binding:value-updated' && payload.direction === 'read') {
+        // Push live data into the widget via hudStore
+        const widgets = window.editor?.sceneManager?.hudConfig?.widgets;
+        const widget = widgets?.find(w => w.id === payload.widgetId);
+        if (widget) {
+          const updated = { ...widget.data };
+          setNestedVal(updated, payload.widgetField, payload.newValue);
+          hudStore.updateWidget(payload.widgetId, { data: updated });
+        }
+      }
+    },
+  });
+  bindingManager.start();
+
   window.editor = {
     sceneManager,
     historyManager,
     transformManager,
     inputManager,
     persistenceManager,
-    dbManager
+    dbManager,
+    bindingManager
   };
 
   // Watch for selection changes to attach transform controls
@@ -165,6 +202,13 @@ onMounted(async () => {
       transformManager.attach(state.selectedObject);
     } else {
       transformManager.detach();
+    }
+  });
+
+  // Watch hudConfig changes → rebind
+  hudStore.$subscribe(() => {
+    if (bindingManager) {
+      bindingManager.rebindAll();
     }
   });
 
@@ -184,7 +228,10 @@ onMounted(async () => {
 
 
 onBeforeUnmount(() => {
-  // Cleanup if necessary
+  if (bindingManager) {
+    bindingManager.dispose();
+    bindingManager = null;
+  }
 });
 </script>
 

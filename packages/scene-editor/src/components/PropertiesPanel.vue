@@ -130,6 +130,7 @@ const onNameInput = (event) => {
   if (selectedObject.value) {
     selectedObject.value.name = val;
     editorStore.notifyTreeUpdate();
+    window.editor?.sceneManager?.emit('object:renamed', { object: selectedObject.value });
   }
 };
 
@@ -239,6 +240,8 @@ const onTransformChange = (type) => {
   if (window.editor && window.editor.transformManager) {
       window.editor.transformManager.updateSelection();
   }
+
+  window.editor?.sceneManager?.emit('object:transform', { object: selectedObject.value });
 };
 
 const onVisibleChange = () => {
@@ -246,6 +249,7 @@ const onVisibleChange = () => {
     selectedObject.value.userData.visibleModified = true;
     // 通知场景树刷新
     editorStore.notifyTreeUpdate();
+    window.editor?.sceneManager?.emit('object:visibility', { object: selectedObject.value });
 };
 </script>
 

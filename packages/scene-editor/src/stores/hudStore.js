@@ -159,6 +159,30 @@ export const useHudStore = defineStore('hud', () => {
     _sync()
   }
 
+  function updateWidgetBinding(id, bindingUpdates) {
+    const w = hudConfig.value.widgets.find(w => w.id === id)
+    if (!w) return
+    w.dataBinding = { ...(w.dataBinding || {}), ...bindingUpdates }
+    _sync()
+  }
+
+  function updateWidgetActions(id, actions) {
+    const w = hudConfig.value.widgets.find(w => w.id === id)
+    if (!w) return
+    w.actions = Array.isArray(actions) ? actions : []
+    _sync()
+  }
+
+  function getAvailableObjects() {
+    const sm = window.editor?.sceneManager
+    if (!sm) return []
+    return sm.objects.map(obj => ({
+      uuid: obj.uuid,
+      name: obj.name || '(unnamed)',
+      type: obj.type
+    }))
+  }
+
   // Sync to SceneManager for persistence
   function _sync() {
     if (window.editor?.sceneManager) {
@@ -241,6 +265,9 @@ export const useHudStore = defineStore('hud', () => {
     toggleLock,
     copyWidget,
     pasteWidget,
+    updateWidgetBinding,
+    updateWidgetActions,
+    getAvailableObjects,
     restoreFromScene
   }
 })

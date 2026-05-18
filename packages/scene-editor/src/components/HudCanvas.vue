@@ -91,7 +91,11 @@ function onCanvasClick() {
 }
 
 function onWidgetPointerDown(e, widget) {
-  if (!editMode.value) return
+  if (!editMode.value) {
+    // Preview mode: dispatch click action
+    window.editor?.bindingManager?.dispatchWidgetTrigger(widget.id, 'click', { event: e });
+    return;
+  }
   e.preventDefault()
   hudStore.selectWidget(widget.id)
 

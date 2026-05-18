@@ -601,6 +601,8 @@ export class SceneManager {
 
         // 自动构建 BVH 以加速射线检测
         this.raycastManager.buildBVH(object);
+
+        this.emit('object:added', { object });
     }
 
     /**
@@ -614,6 +616,8 @@ export class SceneManager {
         this.scene.remove(object);
         this.objects = this.objects.filter(obj => obj !== object);
         this.markTriangleStatsDirty();
+
+        this.emit('object:removed', { object });
     }
 
     /**
@@ -765,6 +769,50 @@ export class SceneManager {
         this.camera.lookAt(center);
         this.controls.target.copy(center);
         this.controls.update();
+    }
+
+    /**
+     * 聚焦相机到单个对象
+     * @param {THREE.Object3D} object - 目标对象
+     * @param {number} [padding=1.5] - 包围盒外扩系数
+     * @param {number} [duration=1000] - 动画时长（毫秒），0 表示立即跳转
+     */
+    fitCameraToObject(object, padding = 1.5, duration = 1000) {
+        if (!object) return;
+
+        const box = new THREE.Box3().expandByObject(object);
+        if (box.isEmpty()) return;
+
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+
+        const fov = this.camera.fov * (Math.PI / 180);
+        let dist = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+        dist *= padding;
+
+        const direction = this.camera.position.clone().sub(this.controls.target).normalize();
+        const newPos = direction.multiplyScalar(dist).add(center);
+
+        this.setView({ position: newPos, target: center, duration });
+    }
+
+    /**
+     * 通过 UUID 查找场景中的对象
+     * @param {string} uuid - 对象 UUID
+     * @returns {THREE.Object3D|null}
+     */
+    getObjectByUUID(uuid) {
+        if (!uuid) return null;
+        // 先从 objects 列表快速查找
+        const found = this.objects.find(obj => obj.uuid === uuid);
+        if (found) return found;
+        // fallback: 场景树遍历
+        let result = null;
+        this.scene.traverse((child) => {
+            if (child.uuid === uuid) result = child;
+        });
+        return result;
     }
 
     /**

@@ -10,5 +10,8 @@ export { TileMapManager } from './src/TileMapManager.js';
 export { SnowManager } from './src/SnowManager.js';
 export { RainManager } from './src/RainManager.js';
 
+// 数据绑定系统
+export * from './src/binding/index.js';
+
 // SDK 入口
 export { loadScene } from './src/loadScene.js';

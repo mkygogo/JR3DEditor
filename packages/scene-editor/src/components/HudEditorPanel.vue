@@ -142,6 +142,16 @@
             </div>
           </div>
         </div>
+
+        <!-- 绑定 Tab -->
+        <div v-show="activeTab === 'binding'" class="tab-content">
+          <DataBindingEditor :widget="selectedWidget" />
+        </div>
+
+        <!-- 动作 Tab -->
+        <div v-show="activeTab === 'actions'" class="tab-content">
+          <ActionsEditor :widget="selectedWidget" />
+        </div>
       </div>
 
       <!-- 组件面板 -->
@@ -181,6 +191,8 @@ import { storeToRefs } from 'pinia'
 import { useHudStore } from '../stores/hudStore'
 import { WIDGET_TYPES, WIDGET_META } from '../widgets/types.js'
 import WidgetPalette from './WidgetPalette.vue'
+import DataBindingEditor from './DataBindingEditor.vue'
+import ActionsEditor from './ActionsEditor.vue'
 
 // Per-type editors
 import TextLabelEditor from '../widgets/editors/TextLabelEditor.vue'
@@ -205,6 +217,8 @@ const editorTabs = [
   { id: 'layout', label: '布局' },
   { id: 'data', label: '数据' },
   { id: 'style', label: '样式' },
+  { id: 'binding', label: '绑定' },
+  { id: 'actions', label: '动作' },
 ]
 
 const dataEditorMap = {

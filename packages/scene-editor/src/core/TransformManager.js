@@ -55,6 +55,9 @@ export class TransformManager {
                         this.persistenceManager
                     );
                     this.historyManager.execute(command);
+
+                    // 通知绑定系统
+                    this.sceneManager.emit('object:transform', { object: this.controls.object });
                 }
 
                 // 触发 UI 更新事件
