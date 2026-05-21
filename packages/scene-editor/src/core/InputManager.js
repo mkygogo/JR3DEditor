@@ -41,9 +41,13 @@ export class InputManager {
         if (intersects.length > 0) {
             const selectedObject = this.resolveSelectableObject(intersects[0].object);
             this.editorStore.selectObject(selectedObject);
+            this.sceneManager.emit?.('scene-click', {
+                object: selectedObject,
+                intersection: intersects[0],
+                source: 'editor'
+            });
         } else {
             this.editorStore.clearSelection();
         }
     }
 }
-

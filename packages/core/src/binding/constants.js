@@ -46,6 +46,7 @@ export const ACTION_TYPE = {
   CAMERA_FOCUS: 'camera-focus',
   TOGGLE_VISIBLE: 'toggle-visible',
   SET_PROPERTY: 'set-property',
+  OPEN_GAUSSIAN_VIEWER: 'open-gaussian-viewer',
 }
 
 // ── 目标模式 ──
@@ -149,6 +150,8 @@ function getDefaultPayload(type) {
       return { strategy: 'toggle' }
     case ACTION_TYPE.SET_PROPERTY:
       return { objectPath: '', value: null, valueFromWidgetField: null }
+    case ACTION_TYPE.OPEN_GAUSSIAN_VIEWER:
+      return { sceneId: '', title: '', source: 'interiorgs' }
     default:
       return {}
   }

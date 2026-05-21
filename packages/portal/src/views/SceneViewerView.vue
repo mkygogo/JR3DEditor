@@ -32,6 +32,13 @@
       <p>{{ error }}</p>
       <router-link to="/" class="back-link">返回首页</router-link>
     </div>
+    <GaussianSplatModal
+      v-if="gaussianModal.open"
+      :scene-id="gaussianModal.sceneId"
+      :title="gaussianModal.title"
+      :initial-view="gaussianModal.initialView"
+      @close="gaussianModal.open = false"
+    />
   </div>
 </template>
 
@@ -40,6 +47,7 @@ import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getPublishedScene } from '../services/portalService';
 import HudOverlay from '../components/HudOverlay.vue';
+import GaussianSplatModal from '../components/GaussianSplatModal.vue';
 
 const route = useRoute();
 const canvasContainer = ref(null);
@@ -49,6 +57,7 @@ const error = ref(null);
 const sceneName = ref('');
 const cameraMode = ref('orbit');
 const hudConfig = ref(null);
+const gaussianModal = ref({ open: false, sceneId: '', title: '', initialView: null });
 
 let instance = null;
 let bindingManager = null;
@@ -57,6 +66,30 @@ const liveWidgetData = reactive({});
 const bindingManagerRef = ref(null);
 const selectedSceneObject = shallowRef(null);
 let sceneClickHandler = null;
+
+function getGaussianAction(object) {
+  const isTrigger = object?.userData?.objectRole === 'gaussian-splat-trigger'
+    || object?.geometry?.type === 'OctahedronGeometry';
+  if (!isTrigger) return null;
+  const actions = object?.userData?.actions?.onClick;
+  if (!Array.isArray(actions)) return null;
+  return actions.find(action =>
+    action?.enabled !== false &&
+    action.type === 'open-gaussian-viewer' &&
+    action.payload?.sceneId
+  ) || null;
+}
+
+function openGaussianForObject(object) {
+  const action = getGaussianAction(object);
+  if (!action) return;
+  gaussianModal.value = {
+    open: true,
+    sceneId: action.payload.sceneId,
+    title: action.payload.title || action.payload.sceneId,
+    initialView: action.payload.defaultView || null,
+  };
+}
 
 function setNestedVal(obj, path, value) {
   if (!path) return;
@@ -113,15 +146,18 @@ onMounted(async () => {
 
     // Load HUD config from scene
     const sm = instance?._internal?.sceneManager;
-    if (sm?.hudConfig) {
-      hudConfig.value = sm.hudConfig;
-
+    if (sm) {
       sceneClickHandler = ({ object }) => {
         const selected = sm.resolveSceneObject?.(object) || object || null;
         selectedSceneObject.value = selected;
         sm.emit?.('object:selected', { object: selected });
+        openGaussianForObject(selected);
       };
       sm.on?.('scene-click', sceneClickHandler);
+    }
+
+    if (sm?.hudConfig) {
+      hudConfig.value = sm.hudConfig;
 
       // Start binding manager in read-only mode
       const { BindingManager } = await import('@meteor3d/core');

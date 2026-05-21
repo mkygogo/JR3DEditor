@@ -33,6 +33,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GOOGLE_AI_KEY: ${GOOGLE_AI_KEY:-}
       ZHIPU_API_KEY: ${ZHIPU_API_KEY:-disabled}
+      INTERIOR_GS_DATA_ROOT: /data/interiorgs
     depends_on:
       mongo:
         condition: service_started
@@ -40,6 +41,7 @@ services:
         condition: service_started
     volumes:
       - backend_uploads:/app/uploads
+      - ${INTERIOR_GS_DATA_ROOT:-/home/jr/GS_Data/InteriorGS/InteriorGS_dataset}:/data/interiorgs:ro
     restart: unless-stopped
 
   mongo:

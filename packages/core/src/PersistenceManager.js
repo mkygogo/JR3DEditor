@@ -110,6 +110,8 @@ export class PersistenceManager {
                 rotation: { x: object.rotation.x, y: object.rotation.y, z: object.rotation.z },
                 scale: { x: object.scale.x, y: object.scale.y, z: object.scale.z },
                 customProperties: this.cloneCustomProperties(object),
+                actions: this.cloneObjectActions(object),
+                objectRole: object.userData?.objectRole || null,
                 modifications: this.extractModifications(object)
             };
         } else if (object.userData.modelType === 'Tileset') {
@@ -123,6 +125,8 @@ export class PersistenceManager {
                 rotation: { x: object.rotation.x, y: object.rotation.y, z: object.rotation.z },
                 scale: { x: object.scale.x, y: object.scale.y, z: object.scale.z },
                 customProperties: this.cloneCustomProperties(object),
+                actions: this.cloneObjectActions(object),
+                objectRole: object.userData?.objectRole || null,
                 gisCenter: object.userData.gisCenter || null  // 保存提取的 GIS 中心点
             };
         } else {
@@ -135,6 +139,8 @@ export class PersistenceManager {
                 rotation: { x: object.rotation.x, y: object.rotation.y, z: object.rotation.z },
                 scale: { x: object.scale.x, y: object.scale.y, z: object.scale.z },
                 customProperties: this.cloneCustomProperties(object),
+                actions: this.cloneObjectActions(object),
+                objectRole: object.userData?.objectRole || null,
                 geometry: { type: object.geometry?.type, parameters: object.geometry?.parameters },
                 material: {
                     color: object.material?.color?.getHex(),
@@ -166,6 +172,31 @@ export class PersistenceManager {
         object.userData.customProperties = Array.isArray(data.customProperties)
             ? data.customProperties.map(item => ({ ...item }))
             : [];
+    }
+
+    cloneObjectActions(object) {
+        const actions = object.userData?.actions;
+        return actions && typeof actions === 'object' ? JSON.parse(JSON.stringify(actions)) : {};
+    }
+
+    restoreObjectActions(object, data) {
+        object.userData.actions = data.actions && typeof data.actions === 'object'
+            ? JSON.parse(JSON.stringify(data.actions))
+            : {};
+    }
+
+    restoreObjectRole(object, data) {
+        if (data.objectRole) {
+            object.userData.objectRole = data.objectRole;
+        } else if (this.isLegacyGaussianTriggerData(data)) {
+            object.userData.objectRole = 'gaussian-splat-trigger';
+        }
+    }
+
+    isLegacyGaussianTriggerData(data) {
+        if (data.geometry?.type !== 'OctahedronGeometry') return false;
+        const actions = data.actions?.onClick;
+        return Array.isArray(actions) && actions.some(action => action?.type === 'open-gaussian-viewer');
     }
 
     /**
@@ -263,6 +294,8 @@ export class PersistenceManager {
             model.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
             model.scale.set(data.scale.x, data.scale.y, data.scale.z);
             this.restoreCustomProperties(model, data);
+            this.restoreObjectActions(model, data);
+            this.restoreObjectRole(model, data);
             if (data.modifications) {
                 this.applyModifications(model, data.modifications);
             }
@@ -276,6 +309,8 @@ export class PersistenceManager {
             tileset.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
             tileset.scale.set(data.scale.x, data.scale.y, data.scale.z);
             this.restoreCustomProperties(tileset, data);
+            this.restoreObjectActions(tileset, data);
+            this.restoreObjectRole(tileset, data);
             return tileset;
         } else {
             let geometry;
@@ -285,6 +320,9 @@ export class PersistenceManager {
             } else if (data.geometry.type === 'SphereGeometry') {
                 const p = data.geometry.parameters;
                 geometry = new THREE.SphereGeometry(p.radius, p.widthSegments, p.heightSegments);
+            } else if (data.geometry.type === 'OctahedronGeometry') {
+                const p = data.geometry.parameters || {};
+                geometry = new THREE.OctahedronGeometry(p.radius ?? 0.65, p.detail ?? 0);
             } else {
                 // 默认几何体
                 geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -314,6 +352,8 @@ export class PersistenceManager {
             mesh.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
             mesh.scale.set(data.scale.x, data.scale.y, data.scale.z);
             this.restoreCustomProperties(mesh, data);
+            this.restoreObjectActions(mesh, data);
+            this.restoreObjectRole(mesh, data);
             return mesh;
         }
     }

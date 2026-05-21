@@ -1,10 +1,9 @@
-# AGENTS.md — Meteor3D Project Guide
+﻿# AGENTS.md 鈥?Meteor3D Project Guide
 
 ## Project Overview
 
-Meteor3D 是一个**低代码 3D 场景可视化与编辑平台**，采用 pnpm monorepo 架构，包含后端服务、核心 SDK、场景编辑器、资产管理器、展示门户五大模块。支持拖拽式 3D 场景创建、GIS 坐标系统、实时资产处理流水线、场景发布与公开展示、云存储集成。
-
-**技术栈**: Three.js + Vue3 + Express + MongoDB + Redis + Bull Queue + ECharts
+Meteor3D 鏄竴涓?*浣庝唬鐮?3D 鍦烘櫙鍙鍖栦笌缂栬緫骞冲彴**锛岄噰鐢?pnpm monorepo 鏋舵瀯锛屽寘鍚悗绔湇鍔°€佹牳蹇?SDK銆佸満鏅紪杈戝櫒銆佽祫浜х鐞嗗櫒銆佸睍绀洪棬鎴蜂簲澶фā鍧椼€傛敮鎸佹嫋鎷藉紡 3D 鍦烘櫙鍒涘缓銆丟IS 鍧愭爣绯荤粺銆佸疄鏃惰祫浜у鐞嗘祦姘寸嚎銆佸満鏅彂甯冧笌鍏紑灞曠ず銆佷簯瀛樺偍闆嗘垚銆?
+**鎶€鏈爤**: Three.js + Vue3 + Express + MongoDB + Redis + Bull Queue + ECharts
 
 ---
 
@@ -12,36 +11,35 @@ Meteor3D 是一个**低代码 3D 场景可视化与编辑平台**，采用 pnpm 
 
 ```
 JR3DEditor/                      # Root (pnpm workspace)
-├── meteor3d-server/             # 后端 API 服务 (Express, port 6001)
-├── packages/
-│   ├── core/                    # 核心 3D 渲染 SDK (@meteor3d/core)
-│   ├── scene-editor/            # 场景编辑器 SPA (@meteor3d/scene-editor, port 6173)
-│   ├── asset-manager/           # 资产管理器 SPA (@meteor3d/asset-manager, port 6175)
-│   └── portal/                  # 展示门户 SPA (@meteor3d/portal, port 6177)
-├── meteor3d/                    # Vite 缓存目录
-├── package.json                 # Monorepo 根配置
-└── pnpm-workspace.yaml          # Workspace 定义
+鈹溾攢鈹€ meteor3d-server/             # 鍚庣 API 鏈嶅姟 (Express, port 6001)
+鈹溾攢鈹€ packages/
+鈹?  鈹溾攢鈹€ core/                    # 鏍稿績 3D 娓叉煋 SDK (@meteor3d/core)
+鈹?  鈹溾攢鈹€ scene-editor/            # 鍦烘櫙缂栬緫鍣?SPA (@meteor3d/scene-editor, port 6173)
+鈹?  鈹溾攢鈹€ asset-manager/           # 璧勪骇绠＄悊鍣?SPA (@meteor3d/asset-manager, port 6175)
+鈹?  鈹斺攢鈹€ portal/                  # 灞曠ず闂ㄦ埛 SPA (@meteor3d/portal, port 6177)
+鈹溾攢鈹€ meteor3d/                    # Vite 缂撳瓨鐩綍
+鈹溾攢鈹€ package.json                 # Monorepo 鏍归厤缃?鈹斺攢鈹€ pnpm-workspace.yaml          # Workspace 瀹氫箟
 ```
 
 ---
 
 ## Package Details
 
-### 1. meteor3d-server (后端服务)
+### 1. meteor3d-server (鍚庣鏈嶅姟)
 
-- **路径**: `meteor3d-server/`
-- **运行时**: Node.js + Express 5
-- **端口**: 6001
-- **数据库**: MongoDB (Mongoose 9) + Redis (Bull Queue)
-- **入口**: `app.js`
+- **璺緞**: `meteor3d-server/`
+- **杩愯鏃?*: Node.js + Express 5
+- **绔彛**: 6001
+- **鏁版嵁搴?*: MongoDB (Mongoose 9) + Redis (Bull Queue)
+- **鍏ュ彛**: `app.js`
 
-**启动命令**:
+**鍚姩鍛戒护**:
 ```bash
-npm run dev     # 开发模式 (nodemon)
-npm start       # 生产模式
+npm run dev     # 寮€鍙戞ā寮?(nodemon)
+npm start       # 鐢熶骇妯″紡
 ```
 
-**环境变量** (需要 `.env` 文件):
+**鐜鍙橀噺** (闇€瑕?`.env` 鏂囦欢):
 ```env
 PORT=6001
 MONGODB_URI=mongodb://<user>:<password>@127.0.0.1:27017/meteor3d?authSource=admin
@@ -52,146 +50,127 @@ UPYUN_SERVICE_NAME=...
 UPYUN_OPERATOR_NAME=...
 UPYUN_PASSWORD=...
 UPYUN_DOMAIN=...
-OPENAI_API_KEY=...        # AI Chat 功能 (可选)
-GOOGLE_AI_KEY=...         # Gemini (可选)
+OPENAI_API_KEY=...        # AI Chat 鍔熻兘 (鍙€?
+GOOGLE_AI_KEY=...         # Gemini (鍙€?
 ZHIPU_API_KEY=...         # Chat controller currently requires a value at startup
 ```
 
-**API 路由**:
-| 前缀 | 功能 | 主要端点 |
+**API 璺敱**:
+| 鍓嶇紑 | 鍔熻兘 | 涓昏绔偣 |
 |------|------|---------|
-| `/api/scene` | 场景 CRUD + 发布 | list, create, load, save, delete, clear, basemap, `:id/publish`, `:id/unpublish` |
-| `/api/assets` | 资产管理 | upload, list, get, delete, download, status, reprocess, register-tileset |
-| `/api/app` | 应用管理 + 发布 | list, get, create, update, delete, `:id/publish`, `:id/unpublish` |
-| `/api/chat` | AI 对话 | chat, chat/stream (SSE) |
-| `/api/portal` | 公开展示 (只读) | scenes, scenes/:slug, apps, apps/:id |
+| `/api/scene` | 鍦烘櫙 CRUD + 鍙戝竷 | list, create, load, save, delete, clear, basemap, `:id/publish`, `:id/unpublish` |
+| `/api/assets` | 璧勪骇绠＄悊 | upload, list, get, delete, download, status, reprocess, register-tileset |
+| `/api/app` | 搴旂敤绠＄悊 + 鍙戝竷 | list, get, create, update, delete, `:id/publish`, `:id/unpublish` |
+| `/api/chat` | AI 瀵硅瘽 | chat, chat/stream (SSE) |
+| `/api/portal` | 鍏紑灞曠ず (鍙) | scenes, scenes/:slug, apps, apps/:id |
 
-**资产处理流水线** (Bull Queue, 6 步):
-1. ZIP 解压 → 2. 格式转换 (OBJ/FBX/STL→GLB) → 3. 模型清洗 → 4. Draco 压缩 → 5. 纹理优化 (KTX2) → 6. LOD 生成 → 7. 包围盒计算 → 上传 Upyun CDN
+**璧勪骇澶勭悊娴佹按绾?* (Bull Queue, 6 姝?:
+1. ZIP 瑙ｅ帇 鈫?2. 鏍煎紡杞崲 (OBJ/FBX/STL鈫扜LB) 鈫?3. 妯″瀷娓呮礂 鈫?4. Draco 鍘嬬缉 鈫?5. 绾圭悊浼樺寲 (KTX2) 鈫?6. LOD 鐢熸垚 鈫?7. 鍖呭洿鐩掕绠?鈫?涓婁紶 Upyun CDN
 
-**核心依赖**: `@gltf-transform`, `draco3dgltf`, `meshoptimizer`, `sharp`, `multer`, `bull`, `openai`
+**鏍稿績渚濊禆**: `@gltf-transform`, `draco3dgltf`, `meshoptimizer`, `sharp`, `multer`, `bull`, `openai`
 
-### 2. @meteor3d/core (核心 SDK)
+### 2. @meteor3d/core (鏍稿績 SDK)
 
-- **路径**: `packages/core/`
-- **构建输出**: UMD (`dist/meteor3d-core.umd.js`) + ES modules
-- **全局变量名**: `Meteor3D`
+- **璺緞**: `packages/core/`
+- **鏋勫缓杈撳嚭**: UMD (`dist/meteor3d-core.umd.js`) + ES modules
+- **鍏ㄥ眬鍙橀噺鍚?*: `Meteor3D`
 
-**核心模块**:
-| 模块 | 职责 |
+**鏍稿績妯″潡**:
+| 妯″潡 | 鑱岃矗 |
 |------|------|
-| `SceneManager` | Three.js 场景/相机/渲染器初始化，集成所有子管理器 |
-| `PersistenceManager` | 场景序列化/反序列化（含 HUD 配置） |
-| `DBManager` | 后端 API 调用封装 |
-| `CameraControlManager` | 多相机控制模式 (Orbit / Ghost FPS) |
-| `GeoCoordinateSystem` | WGS84 ↔ 本地坐标转换 (proj4) |
-| `TileMapManager` | 卫星影像瓦片加载 |
-| `LabelManager` | 3D 标签（无标签时跳过渲染） |
-| `OutlineManager` | 后处理描边（延迟初始化 EffectComposer） |
-| `HighlightManager` | 高亮发光效果 |
-| `LineManager` | 线条绘制 |
-| `VFXManager` | 粒子特效 |
-| `RainManager` / `SnowManager` | 天气粒子效果 |
-| `StatsManager` | FPS 监控 |
-| `RaycastManager` | 射线检测 |
-| `TriangleStatsManager` | 三角形统计 |
+| `SceneManager` | Three.js 鍦烘櫙/鐩告満/娓叉煋鍣ㄥ垵濮嬪寲锛岄泦鎴愭墍鏈夊瓙绠＄悊鍣?|
+| `PersistenceManager` | 鍦烘櫙搴忓垪鍖?鍙嶅簭鍒楀寲锛堝惈 HUD 閰嶇疆锛?|
+| `DBManager` | 鍚庣 API 璋冪敤灏佽 |
+| `CameraControlManager` | 澶氱浉鏈烘帶鍒舵ā寮?(Orbit / Ghost FPS) |
+| `GeoCoordinateSystem` | WGS84 鈫?鏈湴鍧愭爣杞崲 (proj4) |
+| `TileMapManager` | 鍗槦褰卞儚鐡︾墖鍔犺浇 |
+| `LabelManager` | 3D 鏍囩锛堟棤鏍囩鏃惰烦杩囨覆鏌擄級 |
+| `OutlineManager` | 鍚庡鐞嗘弿杈癸紙寤惰繜鍒濆鍖?EffectComposer锛?|
+| `HighlightManager` | 楂樹寒鍙戝厜鏁堟灉 |
+| `LineManager` | 绾挎潯缁樺埗 |
+| `VFXManager` | 绮掑瓙鐗规晥 |
+| `RainManager` / `SnowManager` | 澶╂皵绮掑瓙鏁堟灉 |
+| `StatsManager` | FPS 鐩戞帶 |
+| `RaycastManager` | 灏勭嚎妫€娴?|
+| `TriangleStatsManager` | 涓夎褰㈢粺璁?|
 
-**性能优化**:
-- `powerPreference: 'high-performance'` — 强制使用独立显卡
-- `Math.min(devicePixelRatio, 2)` — 防止超高 DPI 屏幕过度渲染
-- 无 `logarithmicDepthBuffer`（仅 GIS 模式按需启用）
-- OutlineManager 延迟创建 EffectComposer（首次 enable 时才分配 render target）
-- LabelManager 无标签时跳过 CSS2DRenderer 渲染
+**鎬ц兘浼樺寲**:
+- `powerPreference: 'high-performance'` 鈥?寮哄埗浣跨敤鐙珛鏄惧崱
+- `Math.min(devicePixelRatio, 2)` 鈥?闃叉瓒呴珮 DPI 灞忓箷杩囧害娓叉煋
+- 鏃?`logarithmicDepthBuffer`锛堜粎 GIS 妯″紡鎸夐渶鍚敤锛?- OutlineManager 寤惰繜鍒涘缓 EffectComposer锛堥娆?enable 鏃舵墠鍒嗛厤 render target锛?- LabelManager 鏃犳爣绛炬椂璺宠繃 CSS2DRenderer 娓叉煋
 
-**构建命令**: `pnpm build:core`
+**鏋勫缓鍛戒护**: `pnpm build:core`
 
-### 3. @meteor3d/scene-editor (场景编辑器)
+### 3. @meteor3d/scene-editor (鍦烘櫙缂栬緫鍣?
 
-- **路径**: `packages/scene-editor/`
-- **框架**: Vue 3.5 + Vue Router 4 + Pinia 3
-- **端口**: 6173
+- **璺緞**: `packages/scene-editor/`
+- **妗嗘灦**: Vue 3.5 + Vue Router 4 + Pinia 3
+- **绔彛**: 6173
 
-**路由**:
-| 路径 | 视图 | 描述 |
+**璺敱**:
+| 璺緞 | 瑙嗗浘 | 鎻忚堪 |
 |------|------|------|
-| `/` | 重定向 → `/scenes` | |
-| `/scenes` | `ScenesView` | 场景列表/创建/删除 |
-| `/editor/:sceneId` | `EditorView` | 主编辑器界面 |
+| `/` | 閲嶅畾鍚?鈫?`/scenes` | |
+| `/scenes` | `ScenesView` | 鍦烘櫙鍒楄〃/鍒涘缓/鍒犻櫎 |
+| `/editor/:sceneId` | `EditorView` | 涓荤紪杈戝櫒鐣岄潰 |
 
-**编辑器布局**:
+**缂栬緫鍣ㄥ竷灞€**:
 ```
-┌──────────────────────────────────────────────────────┐
-│ Header: 首页链接 │ 场景标题 │ Toolbar (保存/撤销/重做) │
-├──────────┬────────────────────────┬──────────────────┤
-│ SceneTree│    Viewport (3D)       │ 右侧面板:         │
-│ (对象树) │  + HudCanvas (覆盖层)  │ - 属性面板        │
-│          │  + LibraryPanel(底部)  │ - 材质面板        │
-│          │                        │ - 场景设置        │
-│          │                        │ - GIS 设置        │
-│          │                        │ - 天气效果        │
-│          │                        │ - HUD 编辑器     │
-└──────────┴────────────────────────┴──────────────────┘
-```
+鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?Header: 棣栭〉閾炬帴 鈹?鍦烘櫙鏍囬 鈹?Toolbar (淇濆瓨/鎾ら攢/閲嶅仛) 鈹?鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?SceneTree鈹?   Viewport (3D)       鈹?鍙充晶闈㈡澘:         鈹?鈹?(瀵硅薄鏍? 鈹? + HudCanvas (瑕嗙洊灞?  鈹?- 灞炴€ч潰鏉?       鈹?鈹?         鈹? + LibraryPanel(搴曢儴)  鈹?- 鏉愯川闈㈡澘        鈹?鈹?         鈹?                       鈹?- 鍦烘櫙璁剧疆        鈹?鈹?         鈹?                       鈹?- GIS 璁剧疆        鈹?鈹?         鈹?                       鈹?- 澶╂皵鏁堟灉        鈹?鈹?         鈹?                       鈹?- HUD 缂栬緫鍣?    鈹?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹粹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹粹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?```
 
-**编辑器核心 (`src/core/`)**:
-- `InputManager` — 鼠标/键盘输入、射线选取
-- `TransformManager` — Gizmo 变换工具 (移动/旋转/缩放)
-- `HistoryManager` — 撤销/重做栈 (Command 模式)
-- `CommandFactory` — AddObject / DeleteObject / ModifyObject / MoveObject 命令
+**缂栬緫鍣ㄦ牳蹇?(`src/core/`)**:
+- `InputManager` 鈥?榧犳爣/閿洏杈撳叆銆佸皠绾块€夊彇
+- `TransformManager` 鈥?Gizmo 鍙樻崲宸ュ叿 (绉诲姩/鏃嬭浆/缂╂斁)
+- `HistoryManager` 鈥?鎾ら攢/閲嶅仛鏍?(Command 妯″紡)
+- `CommandFactory` 鈥?AddObject / DeleteObject / ModifyObject / MoveObject 鍛戒护
 
-**HUD 系统 (`src/widgets/` + `src/components/Hud*` + `src/stores/hudStore.js`)**:
-- `HudCanvas` — 自由定位画布，支持拖拽/缩放 widget
-- `HudToolbar` — HUD 编辑模式工具栏
-- `HudEditorPanel` — 右侧 HUD 属性编辑面板（布局/数据/样式 tab）
-- `hudStore` — Pinia 状态管理（widget 列表、选中、编辑模式）
-- `WidgetRenderer` — 统一 widget 渲染器（按 type 动态加载组件）
-- **Widget 类型**: stat-card, progress-bar, pie-chart, gauge-chart, bar-chart, line-chart, text-label, image, button, alert-list, data-table, divider, container
-- **Widget 定位**: 百分比坐标 (x, y, width, height)，支持自由拖拽和缩放
-- **数据源**: 静态数据 / 模拟随机数据（可扩展 API 数据源）
-- **图表引擎**: ECharts 6.0
-- **模板系统**: 预设布局模板 (如 digital-park.json)
+**HUD 绯荤粺 (`src/widgets/` + `src/components/Hud*` + `src/stores/hudStore.js`)**:
+- `HudCanvas` 鈥?鑷敱瀹氫綅鐢诲竷锛屾敮鎸佹嫋鎷?缂╂斁 widget
+- `HudToolbar` 鈥?HUD 缂栬緫妯″紡宸ュ叿鏍?- `HudEditorPanel` 鈥?鍙充晶 HUD 灞炴€х紪杈戦潰鏉匡紙甯冨眬/鏁版嵁/鏍峰紡 tab锛?- `hudStore` 鈥?Pinia 鐘舵€佺鐞嗭紙widget 鍒楄〃銆侀€変腑銆佺紪杈戞ā寮忥級
+- `WidgetRenderer` 鈥?缁熶竴 widget 娓叉煋鍣紙鎸?type 鍔ㄦ€佸姞杞界粍浠讹級
+- **Widget 绫诲瀷**: stat-card, progress-bar, pie-chart, gauge-chart, bar-chart, line-chart, text-label, image, button, alert-list, data-table, divider, container
+- **Widget 瀹氫綅**: 鐧惧垎姣斿潗鏍?(x, y, width, height)锛屾敮鎸佽嚜鐢辨嫋鎷藉拰缂╂斁
+- **鏁版嵁婧?*: 闈欐€佹暟鎹?/ 妯℃嫙闅忔満鏁版嵁锛堝彲鎵╁睍 API 鏁版嵁婧愶級
+- **鍥捐〃寮曟搸**: ECharts 6.0
+- **妯℃澘绯荤粺**: 棰勮甯冨眬妯℃澘 (濡?digital-park.json)
 
-**启动命令**: `pnpm dev:scene`
+**鍚姩鍛戒护**: `pnpm dev:scene`
 
-### 4. @meteor3d/asset-manager (资产管理器)
+### 4. @meteor3d/asset-manager (璧勪骇绠＄悊鍣?
 
-- **路径**: `packages/asset-manager/`
-- **框架**: Vue 3 + Pinia
-- **端口**: 6175
+- **璺緞**: `packages/asset-manager/`
+- **妗嗘灦**: Vue 3 + Pinia
+- **绔彛**: 6175
 
-**功能**:
-- 上传 3D 资产 (GLB, OBJ, FBX, STL, ZIP)
-- 上传纹理 (JPG, PNG) / HDRI (HDR, EXR)
-- 注册 3D Tiles URL
-- 查看处理状态 (pending → processing → ready/failed)
-- 资产分类过滤 (模型/纹理/HDRI/3D Tiles)
-- 分页浏览和下载
+**鍔熻兘**:
+- 涓婁紶 3D 璧勪骇 (GLB, OBJ, FBX, STL, ZIP)
+- 涓婁紶绾圭悊 (JPG, PNG) / HDRI (HDR, EXR)
+- 娉ㄥ唽 3D Tiles URL
+- 鏌ョ湅澶勭悊鐘舵€?(pending 鈫?processing 鈫?ready/failed)
+- 璧勪骇鍒嗙被杩囨护 (妯″瀷/绾圭悊/HDRI/3D Tiles)
+- 鍒嗛〉娴忚鍜屼笅杞?
+**鍚姩鍛戒护**: `pnpm dev:asset`
 
-**启动命令**: `pnpm dev:asset`
+### 5. @meteor3d/portal (灞曠ず闂ㄦ埛)
 
-### 5. @meteor3d/portal (展示门户)
+- **璺緞**: `packages/portal/`
+- **妗嗘灦**: Vue 3 + Vue Router 4
+- **绔彛**: 6177
 
-- **路径**: `packages/portal/`
-- **框架**: Vue 3 + Vue Router 4
-- **端口**: 6177
-
-**路由**:
-| 路径 | 视图 | 描述 |
+**璺敱**:
+| 璺緞 | 瑙嗗浘 | 鎻忚堪 |
 |------|------|------|
-| `/` | `HomeView` | 首页：已发布场景/应用卡片网格 + 筛选 + 分页 |
-| `/scene/:slug` | `SceneViewerView` | 全屏 3D 场景查看器 (使用 `loadScene()`) |
+| `/` | `HomeView` | 棣栭〉锛氬凡鍙戝竷鍦烘櫙/搴旂敤鍗＄墖缃戞牸 + 绛涢€?+ 鍒嗛〉 |
+| `/scene/:slug` | `SceneViewerView` | 鍏ㄥ睆 3D 鍦烘櫙鏌ョ湅鍣?(浣跨敤 `loadScene()`) |
 
-**功能**:
-- 浏览所有已发布的 3D 场景和应用
-- 全屏 3D 场景查看器（基于核心 SDK 的 `loadScene()`）
-- HUD 覆盖层：自动加载场景中保存的 HUD 配置并渲染 widget
-- 查看器工具栏：相机模式切换 (Orbit/Ghost)、FPS 统计、全屏（默认隐藏，鼠标移到顶部自动下拉）
-- 场景/应用筛选标签页
-- 分页导航
-- Vite 代理 `/api` → `http://localhost:6001` (via Vite proxy)
-- Vite 别名 `@widgets` → `scene-editor/src/widgets`（复用 widget 组件）
-
-**启动命令**: `pnpm dev:portal`
+**鍔熻兘**:
+- 娴忚鎵€鏈夊凡鍙戝竷鐨?3D 鍦烘櫙鍜屽簲鐢?- 鍏ㄥ睆 3D 鍦烘櫙鏌ョ湅鍣紙鍩轰簬鏍稿績 SDK 鐨?`loadScene()`锛?- HUD 瑕嗙洊灞傦細鑷姩鍔犺浇鍦烘櫙涓繚瀛樼殑 HUD 閰嶇疆骞舵覆鏌?widget
+- 鏌ョ湅鍣ㄥ伐鍏锋爮锛氱浉鏈烘ā寮忓垏鎹?(Orbit/Ghost)銆丗PS 缁熻銆佸叏灞忥紙榛樿闅愯棌锛岄紶鏍囩Щ鍒伴《閮ㄨ嚜鍔ㄤ笅鎷夛級
+- 鍦烘櫙/搴旂敤绛涢€夋爣绛鹃〉
+- 鍒嗛〉瀵艰埅
+- Vite 浠ｇ悊 `/api` 鈫?`http://localhost:6001` (via Vite proxy)
+- Vite 鍒悕 `@widgets` 鈫?`scene-editor/src/widgets`锛堝鐢?widget 缁勪欢锛?
+**鍚姩鍛戒护**: `pnpm dev:portal`
 
 ---
 
@@ -242,33 +221,30 @@ published (Boolean, default: false), publishedAt (Date), sceneId (String)
 
 ### Quick Start
 ```bash
-# 安装依赖
+# 瀹夎渚濊禆
 pnpm install
 
-# 配置后端环境变量
-# 当前仓库未提交 meteor3d-server/.env.example；首次部署请手动创建 .env
-# 编辑 .env 填入 MongoDB / Redis / Upyun 凭据，禁止提交真实密钥
-
-# 启动后端
+# 閰嶇疆鍚庣鐜鍙橀噺
+# 褰撳墠浠撳簱鏈彁浜?meteor3d-server/.env.example锛涢娆￠儴缃茶鎵嬪姩鍒涘缓 .env
+# 缂栬緫 .env 濉叆 MongoDB / Redis / Upyun 鍑嵁锛岀姝㈡彁浜ょ湡瀹炲瘑閽?
+# 鍚姩鍚庣
 cd meteor3d-server && npm run dev
 
-# 启动场景编辑器 (新终端)
+# 鍚姩鍦烘櫙缂栬緫鍣?(鏂扮粓绔?
 pnpm --filter @meteor3d/scene-editor dev --host 0.0.0.0
 
-# 启动资产管理器 (新终端)
+# 鍚姩璧勪骇绠＄悊鍣?(鏂扮粓绔?
 pnpm --filter @meteor3d/asset-manager dev --host 0.0.0.0
 
-# 启动展示门户 (新终端)
+# 鍚姩灞曠ず闂ㄦ埛 (鏂扮粓绔?
 pnpm --filter @meteor3d/portal dev --host 0.0.0.0
 ```
 
 ### Build
 ```bash
-pnpm build:core      # 构建核心 SDK
-pnpm build:scene     # 构建场景编辑器
-pnpm build:asset     # 构建资产管理器
-pnpm build:portal    # 构建展示门户
-pnpm build:all       # 构建所有包
+pnpm build:core      # 鏋勫缓鏍稿績 SDK
+pnpm build:scene     # 鏋勫缓鍦烘櫙缂栬緫鍣?pnpm build:asset     # 鏋勫缓璧勪骇绠＄悊鍣?pnpm build:portal    # 鏋勫缓灞曠ず闂ㄦ埛
+pnpm build:all       # 鏋勫缓鎵€鏈夊寘
 ```
 
 ---
@@ -308,7 +284,7 @@ The production Docker deployment lives at `/home/ubuntu/jr3d-editor` on the clou
 - Nginx intentionally does not enable HTTP/2 for this service because large GLB uploads previously failed with `ERR_HTTP2_PING_FAILED` / Nginx `499`.
 - Nginx upload proxying uses `client_max_body_size 1024m`, `proxy_request_buffering off`, `proxy_buffering off`, and 600s timeouts for `/api/` and `/uploads/`.
 - SSL certificate zip files and unpacked `deploy/ssl` contents are deployment secrets and must not be committed.
-- Current portal branding is `JR数字孪生平台`; scene editor title is `JR数字孪生开发平台`.
+- Current portal branding is `JR鏁板瓧瀛敓骞冲彴`; scene editor title is `JR鏁板瓧瀛敓寮€鍙戝钩鍙癭.
 
 ### Upyun behavior
 
@@ -318,75 +294,66 @@ Upyun is optional CDN/object storage for processed assets and thumbnails. Local 
 
 ## Coding Conventions
 
-- **包管理器**: pnpm (workspace protocol `workspace:*`)
-- **前端框架**: Vue 3 Composition API + `<script setup>`
-- **状态管理**: Pinia (stores in `src/stores/`)
-- **3D 引擎**: Three.js 0.181, ACESFilmic tone mapping, sRGB color space
-- **后端**: Express 5, Mongoose ODM, async/await controllers
-- **文件上传**: Multer, 50MB body limit
-- **队列**: Bull (Redis-backed), 3 retries + exponential backoff
-- **云存储**: Upyun CDN
-- **坐标系**: WGS84 ↔ proj4 投影转换
-- **API 前缀**: `/api/` (scene, assets, app, chat)
-- **Vite 代理**: 前端开发服务器代理 `/api` 和 `/uploads` → `http://localhost:6001`
+- **鍖呯鐞嗗櫒**: pnpm (workspace protocol `workspace:*`)
+- **鍓嶇妗嗘灦**: Vue 3 Composition API + `<script setup>`
+- **鐘舵€佺鐞?*: Pinia (stores in `src/stores/`)
+- **3D 寮曟搸**: Three.js 0.181, ACESFilmic tone mapping, sRGB color space
+- **鍚庣**: Express 5, Mongoose ODM, async/await controllers
+- **鏂囦欢涓婁紶**: Multer, 50MB body limit
+- **闃熷垪**: Bull (Redis-backed), 3 retries + exponential backoff
+- **浜戝瓨鍌?*: Upyun CDN
+- **鍧愭爣绯?*: WGS84 鈫?proj4 鎶曞奖杞崲
+- **API 鍓嶇紑**: `/api/` (scene, assets, app, chat)
+- **Vite 浠ｇ悊**: 鍓嶇寮€鍙戞湇鍔″櫒浠ｇ悊 `/api` 鍜?`/uploads` 鈫?`http://localhost:6001`
 
 ---
 
 ## Key Architecture Patterns
 
-1. **Manager Pattern**: 核心 SDK 中每个功能由独立 Manager 类封装 (SceneManager → 子 Manager)
-2. **Command Pattern**: 编辑器操作通过 CommandFactory 创建可撤销命令
-3. **Pipeline Pattern**: 资产处理通过 Bull Queue 串行执行主要处理阶段
-4. **Persistence Layer**: PersistenceManager 负责 Three.js 对象 ↔ JSON 序列化
-5. **Event-Driven**: SceneManager 通过事件系统通知 UI 层变化
-6. **Publish Workflow**: 场景/应用通过 publish API 标记发布状态，门户 SPA 通过 portal API 只展示已发布内容，slug 友好 URL 支持公开访问
-7. **HUD Overlay**: HUD 配置随场景持久化（hudConfig 字段），编辑器通过 HudCanvas 可视化编辑，Portal 通过 HudOverlay 只读渲染
-8. **Lazy Initialization**: 重资源（如 EffectComposer）延迟到首次使用时创建，避免空场景性能浪费
+1. **Manager Pattern**: 鏍稿績 SDK 涓瘡涓姛鑳界敱鐙珛 Manager 绫诲皝瑁?(SceneManager 鈫?瀛?Manager)
+2. **Command Pattern**: 缂栬緫鍣ㄦ搷浣滈€氳繃 CommandFactory 鍒涘缓鍙挙閿€鍛戒护
+3. **Pipeline Pattern**: 璧勪骇澶勭悊閫氳繃 Bull Queue 涓茶鎵ц涓昏澶勭悊闃舵
+4. **Persistence Layer**: PersistenceManager 璐熻矗 Three.js 瀵硅薄 鈫?JSON 搴忓垪鍖?5. **Event-Driven**: SceneManager 閫氳繃浜嬩欢绯荤粺閫氱煡 UI 灞傚彉鍖?6. **Publish Workflow**: 鍦烘櫙/搴旂敤閫氳繃 publish API 鏍囪鍙戝竷鐘舵€侊紝闂ㄦ埛 SPA 閫氳繃 portal API 鍙睍绀哄凡鍙戝竷鍐呭锛宻lug 鍙嬪ソ URL 鏀寔鍏紑璁块棶
+7. **HUD Overlay**: HUD 閰嶇疆闅忓満鏅寔涔呭寲锛坔udConfig 瀛楁锛夛紝缂栬緫鍣ㄩ€氳繃 HudCanvas 鍙鍖栫紪杈戯紝Portal 閫氳繃 HudOverlay 鍙娓叉煋
+8. **Lazy Initialization**: 閲嶈祫婧愶紙濡?EffectComposer锛夊欢杩熷埌棣栨浣跨敤鏃跺垱寤猴紝閬垮厤绌哄満鏅€ц兘娴垂
 
 ---
 
-## HUD 数据绑定系统（v2024.5）
+## HUD 鏁版嵁缁戝畾绯荤粺锛坴2024.5锛?
+**姒傝堪**锛氫綆浠ｇ爜鏁版嵁缁戝畾寮曟搸锛岃 HUD Widget 瀹炴椂璇诲彇 3D 鍦烘櫙瀵硅薄灞炴€у苟鏀寔浜や簰鍔ㄤ綔銆傜紪杈戝櫒鎻愪緵鍙鍖栭厤缃紝闂ㄦ埛鏀寔鍙戝竷鍦烘櫙鍚庣殑鍙缁戝畾銆?
+### 鏍稿績妯″潡 (`packages/core/src/binding/`)
 
-**概述**：低代码数据绑定引擎，让 HUD Widget 实时读取 3D 场景对象属性并支持交互动作。编辑器提供可视化配置，门户支持发布场景后的只读绑定。
-
-### 核心模块 (`packages/core/src/binding/`)
-
-| 文件 | 功能 |
+| 鏂囦欢 | 鍔熻兘 |
 |------|------|
-| `constants.js` | 枚举常量（绑定模式、映射方向、动作触发器、目标模式） |
-| `pathResolver.js` | 对象路径白名单、值类型推断、路径读写接口 |
-| `transformRegistry.js` | 8 种值转换器（保留小数、范围限制、缩放、弧度转角度、布尔标签、模板字符串等） |
-| `actionExecutors.js` | 4 种动作执行器（高亮、相机聚焦、切换可见、设置属性） |
-| `BindingManager.js` | 核心管理器：绑定解析、属性同步、事件驱动、动作分发 |
-| `index.js` | 统一导出接口 |
+| `constants.js` | 鏋氫妇甯搁噺锛堢粦瀹氭ā寮忋€佹槧灏勬柟鍚戙€佸姩浣滆Е鍙戝櫒銆佺洰鏍囨ā寮忥級 |
+| `pathResolver.js` | 瀵硅薄璺緞鐧藉悕鍗曘€佸€肩被鍨嬫帹鏂€佽矾寰勮鍐欐帴鍙?|
+| `transformRegistry.js` | 8 绉嶅€艰浆鎹㈠櫒锛堜繚鐣欏皬鏁般€佽寖鍥撮檺鍒躲€佺缉鏀俱€佸姬搴﹁浆瑙掑害銆佸竷灏旀爣绛俱€佹ā鏉垮瓧绗︿覆绛夛級 |
+| `actionExecutors.js` | 4 绉嶅姩浣滄墽琛屽櫒锛堥珮浜€佺浉鏈鸿仛鐒︺€佸垏鎹㈠彲瑙併€佽缃睘鎬э級 |
+| `BindingManager.js` | 鏍稿績绠＄悊鍣細缁戝畾瑙ｆ瀽銆佸睘鎬у悓姝ャ€佷簨浠堕┍鍔ㄣ€佸姩浣滃垎鍙?|
+| `index.js` | 缁熶竴瀵煎嚭鎺ュ彛 |
 
-### 绑定模式（4 种）
+### 缁戝畾妯″紡锛? 绉嶏級
 
-| 模式 | 说明 | 用途 |
+| 妯″紡 | 璇存槑 | 鐢ㄩ€?|
 |------|------|------|
-| `static` | 静态数据 | Widget 显示固定值 |
-| `context-selected` | 跟随选中对象（兼容模式） | 编辑器中动态追踪当前选中的场景对象 |
-| `object-id` | 指定对象 UUID | 编辑器和门户中精确绑定固定对象 |
-| `bound-object` | 当前 Widget 绑定对象 | 动作目标默认指向该 Widget 的数据源对象 |
+| `static` | 闈欐€佹暟鎹?| Widget 鏄剧ず鍥哄畾鍊?|
+| `context-selected` | 璺熼殢閫変腑瀵硅薄锛堝吋瀹规ā寮忥級 | 缂栬緫鍣ㄤ腑鍔ㄦ€佽拷韪綋鍓嶉€変腑鐨勫満鏅璞?|
+| `object-id` | 鎸囧畾瀵硅薄 UUID | 缂栬緫鍣ㄥ拰闂ㄦ埛涓簿纭粦瀹氬浐瀹氬璞?|
+| `bound-object` | 褰撳墠 Widget 缁戝畾瀵硅薄 | 鍔ㄤ綔鐩爣榛樿鎸囧悜璇?Widget 鐨勬暟鎹簮瀵硅薄 |
 
-### 属性映射（READ/WRITE/BOTH）
+### 灞炴€ф槧灏勶紙READ/WRITE/BOTH锛?
+鍙粦瀹氱殑瀵硅薄灞炴€ц矾寰勶紙鐧藉悕鍗曪級锛?- `position.x/y/z` 鈥?浣嶇疆鍧愭爣
+- `rotation.x/y/z` 鈥?娆ф媺瑙?- `scale.x/y/z` 鈥?缂╂斁绯绘暟
+- `name` 鈥?瀵硅薄鍚嶇О
+- `visible` 鈥?鍙鎬?- `userData.*` 鈥?鑷畾涔夋暟鎹?
+### 鍔ㄤ綔绯荤粺锛? 绉嶏級
 
-可绑定的对象属性路径（白名单）：
-- `position.x/y/z` — 位置坐标
-- `rotation.x/y/z` — 欧拉角
-- `scale.x/y/z` — 缩放系数
-- `name` — 对象名称
-- `visible` — 可见性
-- `userData.*` — 自定义数据
-
-### 动作系统（4 种）
-
-| 动作 | 触发器 | 目标 | 效果 |
+| 鍔ㄤ綔 | 瑙﹀彂鍣?| 鐩爣 | 鏁堟灉 |
 |------|--------|------|------|
-| `highlight-object` | click/hover-enter | 绑定/选中/指定对象 | 发光高亮 2s 自动还原 |
-| `camera-focus` | click/hover-enter | 绑定/选中/指定对象 | 1s 内相机聚焦至对象 |
-| `toggle-visible` | click/value-change | 绑定/选中/指定对象 | 切换可见性 |
-| `set-property` | click/value-change | 绑定/选中/指定对象 | 写入任意可写属性 |
+| `highlight-object` | click/hover-enter | 缁戝畾/閫変腑/鎸囧畾瀵硅薄 | 鍙戝厜楂樹寒 2s 鑷姩杩樺師 |
+| `camera-focus` | click/hover-enter | 缁戝畾/閫変腑/鎸囧畾瀵硅薄 | 1s 鍐呯浉鏈鸿仛鐒﹁嚦瀵硅薄 |
+| `toggle-visible` | click/value-change | 缁戝畾/閫変腑/鎸囧畾瀵硅薄 | 鍒囨崲鍙鎬?|
+| `set-property` | click/value-change | 缁戝畾/閫変腑/鎸囧畾瀵硅薄 | 鍐欏叆浠绘剰鍙啓灞炴€?|
 
 ### Implementation Status (current master)
 
@@ -399,98 +366,68 @@ The HUD data binding system is implemented in the current `master` branch. Impor
 - `packages/portal/src/views/SceneViewerView.vue` creates a read-only `BindingManager` for published scenes, converts scene clicks into `object:selected`, and uses that selection for `context-selected` HUD bindings; `packages/portal/src/components/HudOverlay.vue` merges live data and dispatches widget click triggers.
 - `packages/scene-editor/src/components/Toolbar.vue` no longer owns HUD quick actions; HUD editing controls live in the HUD-specific canvas/panel flow.
 
-### 编辑器集成（6173）
-
-**右侧 HUD 编辑面板新增 Tab**：
-- **"绑定" Tab**（`DataBindingEditor.vue`）
-  - 选择绑定模式（静态/跟随选中/指定对象）
-  - 添加属性映射（源属性 → 目标字段 → 值变换）；源属性来自 `PathSelector.vue`，使用 `getGroupedPaths()` 返回的 `{ group, paths }` 数组结构
-  - 多字段对象详情优先使用 `object-info-panel` 组件；每个字段的绑定目标形如 `data.fields.0.value`，适合 `context-selected` 场景对象信息展示。
-  - 场景对象业务字段保存在 `object.userData.customProperties`，属性面板可编辑，绑定路径为 `custom.<key>`，后端 `SceneObject.customProperties` 会持久化。
-  - 对象选择器和路径选择器下拉
-  
-- **"动作" Tab**（`ActionsEditor.vue`）
-  - 每条动作配置：触发器 + 动作类型 + 目标模式 + 可选参数
-  - 支持多条动作链
-
-**Viewport.vue 集成**：
-- `BindingManager` 在场景加载后初始化，write-back 启用
-- 监听 `hudConfig` 变化自动 `rebindAll()`
-- 订阅 `binding:value-updated` 事件，推送实时数据到 `hudStore`
-- `setNestedVal()` 工具函数支持点路径赋值
-
-**事件发射**（通过 SceneManager）：
-- `object:selected` — 选中对象时发出
-- `object:transform` — 变换完成或属性面板修改时发出
-- `object:renamed` — 名称修改时发出
-- `object:visibility` — 可见性变化时发出
-- `object:added/removed` — 对象添加/删除时发出
-
-### 门户集成（6177）
-
-**SceneViewerView.vue**：
-- 场景加载后创建 `BindingManager`（只读模式 `allowWriteBack: false`）
-- `liveWidgetData` 响应式对象接收实时绑定数据，并支持点路径字段写入
-- 订阅 `binding:value-updated` 事件，只需读取无需写回
-- 监听 `scene-click` 并发出 `object:selected`，让 `context-selected` 绑定随用户点击场景对象刷新
-
-**HudOverlay.vue**：
-- 新增 props：`bindingManager`、`liveData`
-- `mergedWidget()` 深度合并原始 widget 配置 + 实时绑定数据（不破坏原始 hudConfig）
-- `onWidgetClick()` 分发 click 触发器到 `bindingManager.dispatchWidgetTrigger()`
-- Portal 运行态必须阻止 HUD pointer/click 事件继续穿透到 3D canvas，避免 widget 点击同时触发场景控制器/射线检测。
-- HUD 的 `highlight-object` 动作优先使用 `HighlightManager` 材质高亮；不要默认走 `OutlineManager`，大场景后处理容易让展示页卡顿。
-
-**功能**：发布场景后，门户显示该场景的 HUD Widget，Widget 中的绑定数据实时跟踪 3D 对象属性；点击 Widget 可触发高亮/聚焦等动作。
-
-### 核心 API
+### 缂栬緫鍣ㄩ泦鎴愶紙6173锛?
+**鍙充晶 HUD 缂栬緫闈㈡澘鏂板 Tab**锛?- **"缁戝畾" Tab**锛坄DataBindingEditor.vue`锛?  - 閫夋嫨缁戝畾妯″紡锛堥潤鎬?璺熼殢閫変腑/鎸囧畾瀵硅薄锛?  - 娣诲姞灞炴€ф槧灏勶紙婧愬睘鎬?鈫?鐩爣瀛楁 鈫?鍊煎彉鎹級锛涙簮灞炴€ф潵鑷?`PathSelector.vue`锛屼娇鐢?`getGroupedPaths()` 杩斿洖鐨?`{ group, paths }` 鏁扮粍缁撴瀯
+  - 澶氬瓧娈靛璞¤鎯呬紭鍏堜娇鐢?`object-info-panel` 缁勪欢锛涙瘡涓瓧娈电殑缁戝畾鐩爣褰㈠ `data.fields.0.value`锛岄€傚悎 `context-selected` 鍦烘櫙瀵硅薄淇℃伅灞曠ず銆?  - 鍦烘櫙瀵硅薄涓氬姟瀛楁淇濆瓨鍦?`object.userData.customProperties`锛屽睘鎬ч潰鏉垮彲缂栬緫锛岀粦瀹氳矾寰勪负 `custom.<key>`锛屽悗绔?`SceneObject.customProperties` 浼氭寔涔呭寲銆?  - 瀵硅薄閫夋嫨鍣ㄥ拰璺緞閫夋嫨鍣ㄤ笅鎷?  
+- **"鍔ㄤ綔" Tab**锛坄ActionsEditor.vue`锛?  - 姣忔潯鍔ㄤ綔閰嶇疆锛氳Е鍙戝櫒 + 鍔ㄤ綔绫诲瀷 + 鐩爣妯″紡 + 鍙€夊弬鏁?  - 鏀寔澶氭潯鍔ㄤ綔閾?
+**Viewport.vue 闆嗘垚**锛?- `BindingManager` 鍦ㄥ満鏅姞杞藉悗鍒濆鍖栵紝write-back 鍚敤
+- 鐩戝惉 `hudConfig` 鍙樺寲鑷姩 `rebindAll()`
+- 璁㈤槄 `binding:value-updated` 浜嬩欢锛屾帹閫佸疄鏃舵暟鎹埌 `hudStore`
+- `setNestedVal()` 宸ュ叿鍑芥暟鏀寔鐐硅矾寰勮祴鍊?
+**浜嬩欢鍙戝皠**锛堥€氳繃 SceneManager锛夛細
+- `object:selected` 鈥?閫変腑瀵硅薄鏃跺彂鍑?- `object:transform` 鈥?鍙樻崲瀹屾垚鎴栧睘鎬ч潰鏉夸慨鏀规椂鍙戝嚭
+- `object:renamed` 鈥?鍚嶇О淇敼鏃跺彂鍑?- `object:visibility` 鈥?鍙鎬у彉鍖栨椂鍙戝嚭
+- `object:added/removed` 鈥?瀵硅薄娣诲姞/鍒犻櫎鏃跺彂鍑?
+### 闂ㄦ埛闆嗘垚锛?177锛?
+**SceneViewerView.vue**锛?- 鍦烘櫙鍔犺浇鍚庡垱寤?`BindingManager`锛堝彧璇绘ā寮?`allowWriteBack: false`锛?- `liveWidgetData` 鍝嶅簲寮忓璞℃帴鏀跺疄鏃剁粦瀹氭暟鎹紝骞舵敮鎸佺偣璺緞瀛楁鍐欏叆
+- 璁㈤槄 `binding:value-updated` 浜嬩欢锛屽彧闇€璇诲彇鏃犻渶鍐欏洖
+- 鐩戝惉 `scene-click` 骞跺彂鍑?`object:selected`锛岃 `context-selected` 缁戝畾闅忕敤鎴风偣鍑诲満鏅璞″埛鏂?
+**HudOverlay.vue**锛?- 鏂板 props锛歚bindingManager`銆乣liveData`
+- `mergedWidget()` 娣卞害鍚堝苟鍘熷 widget 閰嶇疆 + 瀹炴椂缁戝畾鏁版嵁锛堜笉鐮村潖鍘熷 hudConfig锛?- `onWidgetClick()` 鍒嗗彂 click 瑙﹀彂鍣ㄥ埌 `bindingManager.dispatchWidgetTrigger()`
+- Portal 杩愯鎬佸繀椤婚樆姝?HUD pointer/click 浜嬩欢缁х画绌块€忓埌 3D canvas锛岄伩鍏?widget 鐐瑰嚮鍚屾椂瑙﹀彂鍦烘櫙鎺у埗鍣?灏勭嚎妫€娴嬨€?- HUD 鐨?`highlight-object` 鍔ㄤ綔浼樺厛浣跨敤 `HighlightManager` 鏉愯川楂樹寒锛涗笉瑕侀粯璁よ蛋 `OutlineManager`锛屽ぇ鍦烘櫙鍚庡鐞嗗鏄撹灞曠ず椤靛崱椤裤€?
+**鍔熻兘**锛氬彂甯冨満鏅悗锛岄棬鎴锋樉绀鸿鍦烘櫙鐨?HUD Widget锛學idget 涓殑缁戝畾鏁版嵁瀹炴椂璺熻釜 3D 瀵硅薄灞炴€э紱鐐瑰嚮 Widget 鍙Е鍙戦珮浜?鑱氱劍绛夊姩浣溿€?
+### 鏍稿績 API
 
 ```javascript
-// 初始化
-const bm = new BindingManager({
+// 鍒濆鍖?const bm = new BindingManager({
   sceneManager,
   hudConfigProvider: () => hudConfig,
   selectionProvider: () => selectedObject,
   objectResolver: (uuid) => sceneManager.getObjectByUUID(uuid),
   allowWriteBack: true,
-  onEvent: (type, payload) => { /* binding:value-updated等事件 */ }
+  onEvent: (type, payload) => { /* binding:value-updated绛変簨浠?*/ }
 });
 
-// 生命周期
-bm.start();           // 开始绑定与事件监听
-bm.rebindAll();       // 重新解析所有 widget 绑定
-bm.rebindWidget(id);  // 重新解析单个 widget
-bm.stop();            // 停止并清理
-bm.dispose();         // 完全释放
+// 鐢熷懡鍛ㄦ湡
+bm.start();           // 寮€濮嬬粦瀹氫笌浜嬩欢鐩戝惉
+bm.rebindAll();       // 閲嶆柊瑙ｆ瀽鎵€鏈?widget 缁戝畾
+bm.rebindWidget(id);  // 閲嶆柊瑙ｆ瀽鍗曚釜 widget
+bm.stop();            // 鍋滄骞舵竻鐞?bm.dispose();         // 瀹屽叏閲婃斁
 
-// 同步
-bm.syncRead(widgetId);           // 手动同步该 widget 的所有读映射
-bm.applyWidgetInput(widgetId, { field: value });  // 应用 widget 输入（写映射）
-
-// 动作
+// 鍚屾
+bm.syncRead(widgetId);           // 鎵嬪姩鍚屾璇?widget 鐨勬墍鏈夎鏄犲皠
+bm.applyWidgetInput(widgetId, { field: value });  // 搴旂敤 widget 杈撳叆锛堝啓鏄犲皠锛?
+// 鍔ㄤ綔
 bm.dispatchWidgetTrigger(widgetId, 'click', { /* eventData */ });
 
-// 查询
-bm.getWidgetStatus(widgetId);       // 返回 OK/DEGRADED/ERROR
-bm.getWidgetRuntimeData(widgetId);  // 获取含绑定数据的完整 widget.data
-bm.validateConfig(hudConfig);       // 验证配置有效性
-```
+// 鏌ヨ
+bm.getWidgetStatus(widgetId);       // 杩斿洖 OK/DEGRADED/ERROR
+bm.getWidgetRuntimeData(widgetId);  // 鑾峰彇鍚粦瀹氭暟鎹殑瀹屾暣 widget.data
+bm.validateConfig(hudConfig);       // 楠岃瘉閰嶇疆鏈夋晥鎬?```
 
-### 数据模型扩展
+### 鏁版嵁妯″瀷鎵╁睍
 
-**Scene.hudConfig** 新增字段：
-```javascript
+**Scene.hudConfig** 鏂板瀛楁锛?```javascript
 {
   widgets: [{
     id: 'w_xxx',
     type: 'stat-card',
-    name: '位置 X',
+    name: '浣嶇疆 X',
     x: 10, y: 10, width: 20, height: 15,
-    data: { title: '位置', value: 0 },
+    data: { title: '浣嶇疆', value: 0 },
     style: { ... },
     
-    // 新增：数据绑定配置
-    dataBinding: {
+    // 鏂板锛氭暟鎹粦瀹氶厤缃?    dataBinding: {
       mode: 'object-id',  // static | context-selected | object-id | bound-object
       source: { objectId: 'uuid-of-cube' },
       mappings: [{
@@ -505,8 +442,7 @@ bm.validateConfig(hudConfig);       // 验证配置有效性
       updatePolicy: 'event'
     },
     
-    // 新增：动作配置
-    actions: [{
+    // 鏂板锛氬姩浣滈厤缃?    actions: [{
       id: 'a_1',
       enabled: true,
       trigger: 'click',          // click | hover-enter | hover-leave | value-change
@@ -590,6 +526,20 @@ The backend listens on `PORT=6001`. When the browser opens the Vite frontend fro
 - When creating a new scene, backend metadata is intentionally empty: do not seed HUD widgets from client state or previous scenes.
 - Production publish links should resolve to `/portal/scene/:slug` under the current origin.
 
+### Gaussian Splat Integration
+
+- InteriorGS data is served through the main Express backend under `/api/gaussian-scenes`, not through a browser-facing standalone Python service.
+- `INTERIOR_GS_DATA_ROOT` points to the InteriorGS dataset. The LAN default is `/home/jr/GS_Data/InteriorGS/InteriorGS_dataset`; Docker maps this read-only to `/data/interiorgs`.
+- Only the dedicated geometry item `高斯泼溅` can bind Gaussian splats. It is saved as an octahedron with `object.userData.objectRole = "gaussian-splat-trigger"`.
+- Gaussian trigger objects persist click actions in `object.userData.actions.onClick`. Gaussian actions use `type: "open-gaussian-viewer"` and `payload: { sceneId, title, source: "interiorgs" }`.
+- The editor Properties panel owns Gaussian association editing, but it must only show this section for `gaussian-splat-trigger` objects. Scene save/load must preserve `objectRole` and `actions` alongside `customProperties`.
+- Gaussian association selection should not auto-lock to the first dataset. The scene dropdown must remain selectable after loading; choosing any dataset should enable/update the action and clear a saved default view only when the `sceneId` actually changes.
+- Gaussian trigger actions can store a per-object default viewer position in `payload.defaultView`. The editor modal may write this through its "设为居中" control; the portal must only read and apply it.
+- `payload.defaultView` stores the viewer mode plus orbit and fly camera state so reopening the same trigger restores the saved viewpoint. The modal "居中" button should prefer this saved view and fall back to automatic AABB/occupancy framing when it is absent or invalid.
+- `GaussianSplatModal.vue` embeds PlayCanvas from `src/vendor/playcanvas.mjs`; keep this vendor file in both scene-editor and portal src/vendor folders unless the viewer is moved into a shared package.
+- Editor and Portal object clicks use the existing `scene-click` flow. Unbound objects keep normal selection/object-info behavior and must not open the modal.
+- Closing the Gaussian modal must destroy the PlayCanvas app, unload the gsplat asset, and remove pointer/keyboard listeners to avoid WebGL leaks and portal freezes.
+
 ### Code Change Guardrails
 
 - Keep Vue code in the existing Vue 3 Composition API and `<script setup>` style.
@@ -603,10 +553,10 @@ The backend listens on `PORT=6001`. When the browser opens the Vite frontend fro
 
 ## Infrastructure Dependencies
 
-| 服务 | 默认配置 | 用途 |
+| 鏈嶅姟 | 榛樿閰嶇疆 | 鐢ㄩ€?|
 |------|---------|------|
-| MongoDB | `127.0.0.1:27017`, db: `meteor3d`, user: `root` | 场景/资产/应用数据持久化 |
-| Redis | `127.0.0.1:6379` | Bull 任务队列后端 |
-| Upyun CDN | `youpaiyun.meteor3d.cn` | 处理后资产云存储 |
-| Node.js | >= 20.19.0 / >= 22.12.0 | 前端 Vite 7 与后端运行时 |
-| pnpm | >= 10.2 | 包管理器 |
+| MongoDB | `127.0.0.1:27017`, db: `meteor3d`, user: `root` | 鍦烘櫙/璧勪骇/搴旂敤鏁版嵁鎸佷箙鍖?|
+| Redis | `127.0.0.1:6379` | Bull 浠诲姟闃熷垪鍚庣 |
+| Upyun CDN | `youpaiyun.meteor3d.cn` | 澶勭悊鍚庤祫浜т簯瀛樺偍 |
+| Node.js | >= 20.19.0 / >= 22.12.0 | 鍓嶇 Vite 7 涓庡悗绔繍琛屾椂 |
+| pnpm | >= 10.2 | 鍖呯鐞嗗櫒 |

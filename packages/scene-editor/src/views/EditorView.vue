@@ -41,11 +41,20 @@
         </div>
       </div>
     </div>
+    <GaussianSplatModal
+      v-if="gaussianModal.open"
+      :scene-id="gaussianModal.sceneId"
+      :title="gaussianModal.title"
+      :initial-view="gaussianModal.initialView"
+      :can-save-default-view="true"
+      @close="gaussianModal.open = false"
+      @save-default-view="handleSaveGaussianDefaultView"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, watch, ref, computed, nextTick } from 'vue';
+import { onMounted, onUnmounted, watch, ref, computed, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import Toolbar from '../components/Toolbar.vue';
 import LibraryPanel from '../components/LibraryPanel.vue';
@@ -59,6 +68,7 @@ import WeatherPanel from '../components/WeatherPanel.vue';
 import HudCanvas from '../components/HudCanvas.vue';
 import HudToolbar from '../components/HudToolbar.vue';
 import HudEditorPanel from '../components/HudEditorPanel.vue';
+import GaussianSplatModal from '../components/GaussianSplatModal.vue';
 import { useHudStore } from '../stores/hudStore';
 import { startOnboarding } from '../utils/onboarding';
 
@@ -66,10 +76,69 @@ const route = useRoute();
 const activeRightTab = ref('properties');
 const hudStore = useHudStore();
 const hudConfig = computed(() => hudStore.hudConfig);
+const gaussianModal = ref({ open: false, sceneId: '', title: '', initialView: null, object: null, action: null });
+let sceneClickHandler = null;
 
 // 加载场景后恢复 HUD
 function restoreHudConfig() {
   hudStore.restoreFromScene();
+}
+
+function getGaussianAction(object) {
+  const isTrigger = object?.userData?.objectRole === 'gaussian-splat-trigger'
+    || object?.geometry?.type === 'OctahedronGeometry';
+  if (!isTrigger) return null;
+  const actions = object?.userData?.actions?.onClick;
+  if (!Array.isArray(actions)) return null;
+  return actions.find(action =>
+    action?.enabled !== false &&
+    action.type === 'open-gaussian-viewer' &&
+    action.payload?.sceneId
+  ) || null;
+}
+
+function bindGaussianClickHandler() {
+  const sm = window.editor?.sceneManager;
+  if (!sm?.on || sceneClickHandler) return;
+  sceneClickHandler = ({ object }) => {
+    const selected = sm.resolveSceneObject?.(object) || object;
+    const action = getGaussianAction(selected);
+    if (!action) return;
+    gaussianModal.value = {
+      open: true,
+      sceneId: action.payload.sceneId,
+      title: action.payload.title || action.payload.sceneId,
+      initialView: action.payload.defaultView || null,
+      object: selected,
+      action,
+    };
+  };
+  sm.on('scene-click', sceneClickHandler);
+}
+
+function handleSaveGaussianDefaultView(view) {
+  const action = gaussianModal.value.action;
+  const object = gaussianModal.value.object;
+  if (!action || !object) return;
+  action.payload = {
+    ...(action.payload || {}),
+    defaultView: view,
+  };
+  if (!object.userData) object.userData = {};
+  object.userData.actionsModified = true;
+  gaussianModal.value = {
+    ...gaussianModal.value,
+    initialView: view,
+  };
+  window.editor?.sceneManager?.emit('object:actions', { object });
+}
+
+function unbindGaussianClickHandler() {
+  const sm = window.editor?.sceneManager;
+  if (sceneClickHandler && sm?.off) {
+    sm.off('scene-click', sceneClickHandler);
+  }
+  sceneClickHandler = null;
 }
 
 const rightTabs = [
@@ -141,11 +210,17 @@ onMounted(() => {
   // 场景加载完成后恢复 HUD 配置
   const onSceneLoaded = () => {
     restoreHudConfig();
+    bindGaussianClickHandler();
     window.removeEventListener('scene-loaded', onSceneLoaded);
   };
   window.addEventListener('scene-loaded', onSceneLoaded);
   // 如果场景已经加载完成（页面刷新后），稍后尝试恢复
   setTimeout(restoreHudConfig, 2000);
+  setTimeout(bindGaussianClickHandler, 2000);
+});
+
+onUnmounted(() => {
+  unbindGaussianClickHandler();
 });
 
 // 监听路由变化，支持场景切换

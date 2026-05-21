@@ -19,6 +19,13 @@
       >
         🔵 球体
       </div>
+      <div
+        class="item"
+        draggable="true"
+        @dragstart="onDragStart($event, 'GaussianSplatTrigger')"
+      >
+        ◆ 高斯泼溅
+      </div>
     </div>
 
     <!-- 模型部分 -->

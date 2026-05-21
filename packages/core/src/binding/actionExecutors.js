@@ -136,6 +136,17 @@ executors.set(ACTION_TYPE.SET_PROPERTY, (sceneManager, object, payload = {}, con
   return { success: true }
 })
 
+executors.set(ACTION_TYPE.OPEN_GAUSSIAN_VIEWER, (sceneManager, object, payload = {}) => {
+  if (!payload?.sceneId) return { success: false, error: ACTION_ERR.E_PAYLOAD_INVALID }
+  sceneManager.emit?.('gaussian-viewer:open', {
+    object,
+    sceneId: payload.sceneId,
+    title: payload.title || payload.sceneId,
+    source: payload.source || 'interiorgs',
+  })
+  return { success: true }
+})
+
 /**
  * 执行动作
  * @param {string} actionType - ACTION_TYPE 枚举值

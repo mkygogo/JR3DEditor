@@ -45,6 +45,23 @@
       </div>
     </div>
 
+    <div v-if="isGaussianTrigger" class="section">
+      <div class="section-header">
+        <h4>高斯泼溅关联</h4>
+        <input class="switch" type="checkbox" :checked="gaussianEnabled" @change="setGaussianEnabled($event.target.checked)">
+      </div>
+      <div class="prop-row">
+        <label>场景</label>
+        <select :value="gaussianSceneId" :disabled="gaussianLoading" @change="updateGaussianScene($event.target.value)">
+          <option value="">{{ gaussianLoading ? '加载中...' : '请选择高斯场景' }}</option>
+          <option v-for="scene in gaussianScenes" :key="scene.id" :value="scene.id">{{ scene.id }}</option>
+        </select>
+      </div>
+      <div v-if="gaussianSummary" class="gaussian-summary">{{ gaussianSummary }}</div>
+      <div class="gaussian-summary">默认视角：{{ gaussianDefaultViewLabel }}</div>
+      <div v-if="gaussianError" class="gaussian-error">{{ gaussianError }}</div>
+    </div>
+
     <!-- Position -->
     <div class="section" :key="'pos-' + forceUpdateKey">
       <h4>位置 (Position)</h4>
@@ -153,10 +170,128 @@ const customProperties = computed(() => {
   return [...raw];
 });
 
+const gaussianScenes = ref([]);
+const gaussianLoading = ref(false);
+const gaussianError = ref('');
+const isGaussianTrigger = computed(() => selectedObject.value?.userData?.objectRole === 'gaussian-splat-trigger');
+
+const gaussianAction = computed(() => {
+  forceUpdateKey.value;
+  if (!isGaussianTrigger.value) return null;
+  const actions = selectedObject.value?.userData?.actions?.onClick;
+  return Array.isArray(actions)
+    ? actions.find(action => action.type === 'open-gaussian-viewer')
+    : null;
+});
+
+const gaussianEnabled = computed(() => Boolean(gaussianAction.value && gaussianAction.value.enabled !== false));
+const gaussianSceneId = computed(() => gaussianAction.value?.payload?.sceneId || '');
+const gaussianSummary = computed(() => {
+  const scene = gaussianScenes.value.find(item => item.id === gaussianSceneId.value);
+  if (!scene) return '';
+  return `${formatBytes(scene.plyBytes)} / ${scene.labels ?? 0} objects / ${scene.rooms ?? 0} rooms`;
+});
+const gaussianDefaultViewLabel = computed(() => gaussianAction.value?.payload?.defaultView ? '已设置' : '未设置');
+
 function ensureCustomProperties(object) {
   if (!object) return;
   if (!object.userData) object.userData = {};
   if (!Array.isArray(object.userData.customProperties)) object.userData.customProperties = [];
+}
+
+function ensureObjectActions(object) {
+  if (!object) return null;
+  if (!object.userData) object.userData = {};
+  if (!isGaussianTrigger.value) return null;
+  object.userData.objectRole = 'gaussian-splat-trigger';
+  if (!object.userData.actions || typeof object.userData.actions !== 'object') object.userData.actions = {};
+  if (!Array.isArray(object.userData.actions.onClick)) object.userData.actions.onClick = [];
+  return object.userData.actions;
+}
+
+function markActionsChanged() {
+  if (!selectedObject.value) return;
+  selectedObject.value.userData.actionsModified = true;
+  forceUpdateKey.value++;
+  window.editor?.sceneManager?.emit('object:actions', { object: selectedObject.value });
+}
+
+function createGaussianAction(sceneId = '') {
+  const scene = gaussianScenes.value.find(item => item.id === sceneId);
+  return {
+    id: `obj_gaussian_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    enabled: true,
+    trigger: 'click',
+    type: 'open-gaussian-viewer',
+    payload: {
+      sceneId,
+      title: scene?.title || sceneId,
+      source: 'interiorgs',
+    },
+  };
+}
+
+function setGaussianEnabled(enabled) {
+  if (!selectedObject.value) return;
+  const actions = ensureObjectActions(selectedObject.value);
+  if (!actions) return;
+  const list = actions.onClick;
+  const index = list.findIndex(action => action.type === 'open-gaussian-viewer');
+  if (enabled && index < 0) {
+    list.push(createGaussianAction(''));
+  } else if (!enabled && index >= 0) {
+    list.splice(index, 1);
+  }
+  markActionsChanged();
+}
+
+function updateGaussianScene(sceneId) {
+  if (!selectedObject.value) return;
+  const actions = ensureObjectActions(selectedObject.value);
+  if (!actions) return;
+  let action = actions.onClick.find(item => item.type === 'open-gaussian-viewer');
+  if (!action) {
+    action = createGaussianAction(sceneId);
+    actions.onClick.push(action);
+  }
+  const previousSceneId = action.payload?.sceneId || '';
+  const scene = gaussianScenes.value.find(item => item.id === sceneId);
+  action.enabled = Boolean(sceneId);
+  action.payload = {
+    ...(action.payload || {}),
+    sceneId,
+    title: scene?.title || sceneId,
+    source: 'interiorgs',
+  };
+  if (previousSceneId !== sceneId) delete action.payload.defaultView;
+  markActionsChanged();
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes)) return '-';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let idx = 0;
+  while (value >= 1024 && idx < units.length - 1) {
+    value /= 1024;
+    idx++;
+  }
+  return `${value.toFixed(idx ? 1 : 0)} ${units[idx]}`;
+}
+
+async function loadGaussianScenes() {
+  gaussianLoading.value = true;
+  gaussianError.value = '';
+  try {
+    const res = await fetch('/api/gaussian-scenes');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = await res.json();
+    gaussianScenes.value = payload.scenes || [];
+  } catch (err) {
+    gaussianError.value = `Gaussian scene list failed: ${err.message || err}`;
+  } finally {
+    gaussianLoading.value = false;
+  }
 }
 
 function makeCustomKey(label) {
@@ -181,7 +316,7 @@ function emitCustomDataChanged() {
 function addCustomProperty() {
   if (!selectedObject.value) return;
   ensureCustomProperties(selectedObject.value);
-  selectedObject.value.userData.customProperties.push({ key: makeCustomKey('field'), label: '新属性', value: '' });
+  selectedObject.value.userData.customProperties.push({ key: makeCustomKey('field'), label: 'New Property', value: '' });
   emitCustomDataChanged();
 }
 
@@ -265,6 +400,7 @@ const handleTransformChanged = (event) => {
 
 onMounted(() => {
   window.addEventListener('transform-changed', handleTransformChanged);
+  loadGaussianScenes();
 });
 
 onBeforeUnmount(() => {
@@ -458,6 +594,38 @@ input {
   padding: 4px 8px;
   border-radius: 3px;
   font-size: 12px;
+}
+
+select {
+  flex: 1;
+  min-width: 0;
+  background: #333;
+  border: 1px solid #444;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.switch {
+  flex: none;
+  width: auto;
+}
+
+.gaussian-summary {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 118, 216, 0.12);
+  border-radius: 3px;
+  color: #8ecbff;
+  font-size: 12px;
+}
+
+.gaussian-error {
+  margin-top: 8px;
+  color: #ff8a8a;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 input:focus {

@@ -196,10 +196,24 @@ const onDrop = async (event) => {
     } else if (type === 'Sphere') {
       geometry = new THREE.SphereGeometry(0.5, 32, 32);
       material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    } else if (type === 'GaussianSplatTrigger') {
+      geometry = new THREE.OctahedronGeometry(0.65, 0);
+      material = new THREE.MeshStandardMaterial({
+        color: 0x16a3ff,
+        emissive: 0x063f66,
+        emissiveIntensity: 0.75,
+        roughness: 0.38,
+        metalness: 0.15,
+      });
     }
 
     if (geometry && material) {
       object = new THREE.Mesh(geometry, material);
+      if (type === 'GaussianSplatTrigger') {
+        object.name = '高斯泼溅';
+        object.userData.objectRole = 'gaussian-splat-trigger';
+        object.userData.actions = { onClick: [] };
+      }
       
       // 使用统一的放置位置计算
       const dropPosition = getDropPosition(event);

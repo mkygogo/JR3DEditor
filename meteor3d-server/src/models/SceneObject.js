@@ -43,6 +43,11 @@ const SceneObjectSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: []
     },
+    actions: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
+    objectRole: String,
     // 对于 GLTF 模型
     url: String,
     modifications: mongoose.Schema.Types.Mixed,
