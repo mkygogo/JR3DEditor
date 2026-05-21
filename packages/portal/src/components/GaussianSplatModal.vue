@@ -15,6 +15,10 @@
       <div v-if="loading || error" class="gaussian-status">
         <strong>{{ error ? '加载失败' : '加载中' }}</strong>
         <span>{{ error || statusText }}</span>
+        <div v-if="!error" class="progress-track">
+          <div class="progress-fill" :style="{ width: `${progressPercent}%` }"></div>
+        </div>
+        <span v-if="!error" class="progress-text">{{ progressText }}</span>
       </div>
     </div>
   </div>
@@ -36,6 +40,8 @@ const canvasHostRef = ref(null);
 const loading = ref(true);
 const error = ref('');
 const statusText = ref('读取高斯场景元数据');
+const progressPercent = ref(4);
+const progressText = ref('准备加载');
 const controlMode = ref('orbit');
 const displayTitle = computed(() => props.title || props.sceneId);
 const modeHint = computed(() => controlMode.value === 'fly'
@@ -49,8 +55,11 @@ let splatEntity;
 let splatAsset;
 let sceneDetail;
 let rafResize = 0;
+let modelBlobUrl = '';
+let modelAbortController = null;
 const keys = new Set();
 const WORLD_UP = () => new pc.Vec3(0, 0, 1);
+const GAUSSIAN_CACHE_NAME = 'jr3d-gaussian-models-v1';
 
 const orbit = { target: null, yaw: 35, pitch: -24, distance: 8, dragging: false, panning: false, lastX: 0, lastY: 0 };
 const fly = { yaw: 35, pitch: -12, speed: 2.5, fastMultiplier: 4, mouseSensitivity: 0.12 };
@@ -214,6 +223,96 @@ function saveDefaultView() {
   emit('save-default-view', captureCurrentView());
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index++;
+  }
+  return `${value.toFixed(index ? 1 : 0)} ${units[index]}`;
+}
+
+function cacheKey(url) {
+  return new URL(url, window.location.origin).toString();
+}
+
+async function readCachedModel(url) {
+  if (!('caches' in window)) return null;
+  try {
+    const cache = await caches.open(GAUSSIAN_CACHE_NAME);
+    const cached = await cache.match(cacheKey(url));
+    if (!cached) return null;
+    const blob = await cached.blob();
+    progressPercent.value = 90;
+    progressText.value = `已从本地缓存读取 ${formatBytes(blob.size)}`;
+    return URL.createObjectURL(blob);
+  } catch (err) {
+    console.warn('[GaussianSplatModal] cache read failed:', err);
+    return null;
+  }
+}
+
+async function writeCachedModel(url, blob) {
+  if (!('caches' in window)) return;
+  try {
+    const cache = await caches.open(GAUSSIAN_CACHE_NAME);
+    await cache.put(cacheKey(url), new Response(blob, {
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': String(blob.size),
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    }));
+  } catch (err) {
+    console.warn('[GaussianSplatModal] cache write failed:', err);
+  }
+}
+
+async function downloadModelWithProgress(url) {
+  const cachedUrl = await readCachedModel(url);
+  if (cachedUrl) return cachedUrl;
+
+  modelAbortController = new AbortController();
+  progressPercent.value = 12;
+  progressText.value = '连接模型文件';
+  const res = await fetch(url, { signal: modelAbortController.signal });
+  if (!res.ok) throw new Error(`模型下载失败：HTTP ${res.status}`);
+
+  const total = Number(res.headers.get('content-length')) || sceneDetail?.plyBytes || 0;
+  if (!res.body?.getReader) {
+    const blob = await res.blob();
+    progressPercent.value = 76;
+    progressText.value = `${formatBytes(blob.size)} / ${formatBytes(total || blob.size)}`;
+    writeCachedModel(url, blob);
+    return URL.createObjectURL(blob);
+  }
+
+  const reader = res.body.getReader();
+  const chunks = [];
+  let loaded = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.byteLength;
+    if (total) {
+      progressPercent.value = Math.min(76, 12 + (loaded / total) * 64);
+      progressText.value = `${formatBytes(loaded)} / ${formatBytes(total)}`;
+    } else {
+      progressPercent.value = Math.min(68, progressPercent.value + 1.5);
+      progressText.value = `${formatBytes(loaded)} 已下载`;
+    }
+  }
+  progressPercent.value = 78;
+  progressText.value = '模型下载完成，正在解析';
+  const blob = new Blob(chunks, { type: 'application/octet-stream' });
+  writeCachedModel(url, blob);
+  return URL.createObjectURL(blob);
+}
+
 function moveFlyCamera(dt) {
   if (controlMode.value !== 'fly') return;
   const delta = new pc.Vec3();
@@ -260,9 +359,16 @@ async function initViewer() {
     return res.json();
   });
   frameFromOccupancy(sceneDetail.occupancy);
-  statusText.value = '加载高斯泼溅模型';
+  progressPercent.value = 10;
+  progressText.value = sceneDetail?.plyBytes ? `模型大小 ${formatBytes(sceneDetail.plyBytes)}` : '准备下载模型';
+  statusText.value = '下载高斯泼溅模型';
 
-  splatAsset = new pc.Asset(`${props.sceneId}.ply`, 'gsplat', { url: fileUrl('3dgs_compressed.ply') });
+  modelBlobUrl = await downloadModelWithProgress(fileUrl('3dgs_compressed.ply'));
+  statusText.value = '解析高斯泼溅模型';
+  progressPercent.value = 82;
+  progressText.value = '正在创建 GPU 资源';
+
+  splatAsset = new pc.Asset(`${props.sceneId}.ply`, 'gsplat', { url: modelBlobUrl });
   app.assets.add(splatAsset);
   splatAsset.on('error', err => {
     error.value = String(err || '模型加载失败');
@@ -272,6 +378,8 @@ async function initViewer() {
     splatEntity.addComponent('gsplat', { asset: splatAsset });
     app.root.addChild(splatEntity);
     if (!applySavedView(props.initialView)) frameFromAabb(splatAsset.resource?.aabb);
+    progressPercent.value = 100;
+    progressText.value = '加载完成';
     loading.value = false;
   });
   app.assets.load(splatAsset);
@@ -392,12 +500,16 @@ function onWheel(event) {
 
 function disposeViewer() {
   unbindEvents();
+  modelAbortController?.abort();
+  modelAbortController = null;
   if (document.pointerLockElement === canvasRef.value) document.exitPointerLock();
   if (splatEntity) splatEntity.destroy();
   if (splatAsset && app) {
     app.assets.remove(splatAsset);
     splatAsset.unload();
   }
+  if (modelBlobUrl) URL.revokeObjectURL(modelBlobUrl);
+  modelBlobUrl = '';
   app?.destroy();
   app = null;
 }
@@ -498,5 +610,26 @@ canvas {
   color: #d8e7ff;
   background: rgba(7, 9, 13, 0.78);
   pointer-events: none;
+}
+
+.progress-track {
+  width: min(460px, 72%);
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #12a5ff, #72e2ff);
+  transition: width 0.16s ease;
+}
+
+.progress-text {
+  color: #9fb4c9;
+  font-size: 12px;
 }
 </style>

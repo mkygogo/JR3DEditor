@@ -56,15 +56,8 @@ const SceneObjectSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed
     },
     material: {
-        color: Number,
-        roughness: Number,
-        metalness: Number,
-        blending: Number,
-        side: Number,
-        transparent: Boolean,
-        depthTest: Boolean,
-        depthWrite: Boolean,
-        vertexColors: Boolean
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
     }
 }, {
     timestamps: true

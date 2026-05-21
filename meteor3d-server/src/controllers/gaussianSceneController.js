@@ -123,6 +123,17 @@ exports.streamSceneFile = async (req, res) => {
   res.setHeader('Accept-Ranges', 'bytes');
   res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
   res.setHeader('Content-Type', contentType);
+  res.setHeader('Last-Modified', stat.mtime.toUTCString());
+  res.setHeader('ETag', `"${stat.size}-${Math.floor(stat.mtimeMs)}"`);
+  if (filename === '3dgs_compressed.ply') {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  } else {
+    res.setHeader('Cache-Control', 'public, max-age=300');
+  }
+
+  if (!req.headers.range && req.headers['if-none-match'] === `"${stat.size}-${Math.floor(stat.mtimeMs)}"`) {
+    return res.status(304).end();
+  }
 
   const range = req.headers.range;
   if (range) {

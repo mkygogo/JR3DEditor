@@ -322,7 +322,10 @@ export class PersistenceManager {
                 geometry = new THREE.SphereGeometry(p.radius, p.widthSegments, p.heightSegments);
             } else if (data.geometry.type === 'OctahedronGeometry') {
                 const p = data.geometry.parameters || {};
-                geometry = new THREE.OctahedronGeometry(p.radius ?? 0.65, p.detail ?? 0);
+                const radius = data.objectRole === 'gaussian-splat-trigger'
+                    ? Math.max(p.radius ?? 1.15, 1.15)
+                    : (p.radius ?? 1.15);
+                geometry = new THREE.OctahedronGeometry(radius, p.detail ?? 0);
             } else {
                 // 默认几何体
                 geometry = new THREE.BoxGeometry(1, 1, 1);

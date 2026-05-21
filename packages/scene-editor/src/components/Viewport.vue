@@ -197,7 +197,7 @@ const onDrop = async (event) => {
       geometry = new THREE.SphereGeometry(0.5, 32, 32);
       material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
     } else if (type === 'GaussianSplatTrigger') {
-      geometry = new THREE.OctahedronGeometry(0.65, 0);
+      geometry = new THREE.OctahedronGeometry(1.15, 0);
       material = new THREE.MeshStandardMaterial({
         color: 0x16a3ff,
         emissive: 0x063f66,

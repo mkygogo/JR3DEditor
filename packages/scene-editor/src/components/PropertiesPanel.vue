@@ -470,10 +470,15 @@ const onVisibleChange = () => {
 <style scoped>
 .properties-panel {
   width: 280px;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
   background: #222;
   color: white;
   padding: 15px;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   border-left: 1px solid #333;
 }
 

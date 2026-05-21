@@ -305,6 +305,7 @@ watch(
   flex-direction: row; /* 水平排列：左侧 Tabs，右侧内容 */
   border-left: 1px solid #333;
   background: #222;
+  min-height: 0;
 }
 
 .side-tabs {
@@ -350,5 +351,6 @@ watch(
   overflow: hidden;
   position: relative;
   min-width: 0;
+  min-height: 0;
 }
 </style>

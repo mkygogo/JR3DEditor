@@ -41,7 +41,7 @@ services:
         condition: service_started
     volumes:
       - backend_uploads:/app/uploads
-      - ${INTERIOR_GS_DATA_ROOT:-/home/jr/GS_Data/InteriorGS/InteriorGS_dataset}:/data/interiorgs:ro
+      - ${INTERIOR_GS_DATA_ROOT:-/home/ubuntu/gs_data/InteriorGS_dataset}:/data/interiorgs:ro
     restart: unless-stopped
 
   mongo:

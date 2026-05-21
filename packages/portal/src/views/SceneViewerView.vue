@@ -66,6 +66,8 @@ const liveWidgetData = reactive({});
 const bindingManagerRef = ref(null);
 const selectedSceneObject = shallowRef(null);
 let sceneClickHandler = null;
+let markerRaf = 0;
+const gaussianMarkers = [];
 
 function getGaussianAction(object) {
   const isTrigger = object?.userData?.objectRole === 'gaussian-splat-trigger'
@@ -128,6 +130,28 @@ function autoPopulateObjectInfoPanels(sm, object) {
   }
 }
 
+function startGaussianMarkerVisibilityLoop(sm) {
+  if (!sm?.camera || markerRaf) return;
+  const showDistance = 42;
+  const hideDistance = 52;
+  const update = () => {
+    for (const item of gaussianMarkers) {
+      const distance = sm.camera.position.distanceTo(item.object.getWorldPosition(item.worldPosition));
+      item.sprite.visible = item.sprite.visible
+        ? distance < hideDistance
+        : distance < showDistance;
+    }
+    markerRaf = requestAnimationFrame(update);
+  };
+  update();
+}
+
+function stopGaussianMarkerVisibilityLoop() {
+  if (markerRaf) cancelAnimationFrame(markerRaf);
+  markerRaf = 0;
+  gaussianMarkers.length = 0;
+}
+
 onMounted(async () => {
   const slug = route.params.slug;
   try {
@@ -147,6 +171,57 @@ onMounted(async () => {
     // Load HUD config from scene
     const sm = instance?._internal?.sceneManager;
     if (sm) {
+      // Enhance GS trigger objects and reveal marker labels only near the camera.
+      const { Sprite, SpriteMaterial, CanvasTexture } = await import('three');
+      for (const obj of sm.objects) {
+        if (obj.userData?.objectRole === 'gaussian-splat-trigger' && obj.material) {
+          obj.material.depthTest = false;
+          obj.material.transparent = true;
+          obj.material.opacity = 0.85;
+          if (obj.material.emissive && obj.material.color) {
+            obj.material.emissive.copy(obj.material.color);
+          }
+          obj.material.emissiveIntensity = 0.6;
+          obj.renderOrder = 999;
+          obj.material.needsUpdate = true;
+
+          // Add a nearby sprite label, hidden until the camera approaches the trigger.
+          const canvas2d = document.createElement('canvas');
+          canvas2d.width = 512;
+          canvas2d.height = 256;
+          const ctx = canvas2d.getContext('2d');
+          ctx.fillStyle = 'rgba(22, 163, 255, 0.85)';
+          ctx.beginPath();
+          ctx.roundRect(16, 16, 480, 224, 20);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.roundRect(16, 16, 480, 224, 20);
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 56px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(obj.name || '高斯泼溅', 256, 100);
+          ctx.font = '40px sans-serif';
+          ctx.fillText('🔍 点击进入', 256, 175);
+
+          const tex = new CanvasTexture(canvas2d);
+          const spriteMat = new SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+          const sprite = new Sprite(spriteMat);
+          sprite.scale.set(8, 4, 1);
+          sprite.position.set(0, 2.2, 0);
+          sprite.visible = false;
+          sprite.renderOrder = 1000;
+          sprite.userData._gsMarker = true;
+          obj.add(sprite);
+          gaussianMarkers.push({ object: obj, sprite, worldPosition: obj.position.clone() });
+          console.log('[Portal] GS trigger enhanced with sprite:', obj.name);
+        }
+      }
+      startGaussianMarkerVisibilityLoop(sm);
+
       sceneClickHandler = ({ object }) => {
         const selected = sm.resolveSceneObject?.(object) || object || null;
         selectedSceneObject.value = selected;
@@ -193,6 +268,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  stopGaussianMarkerVisibilityLoop();
   const sm = instance?._internal?.sceneManager;
   if (sceneClickHandler && sm?.off) {
     sm.off('scene-click', sceneClickHandler);

@@ -190,7 +190,11 @@ published (Boolean, default: false), publishedAt (Date), slug (String, unique sp
 ```
 id, sceneId (indexed), type, name, visible,
 position: {x,y,z}, rotation: {x,y,z}, scale: {x,y,z},
-url (GLTF), customProperties [{key,label,value,type}], modifications, geometry, material: {color, roughness, metalness, blending, side, transparent, depthTest, depthWrite, vertexColors}
+url (GLTF), customProperties [{key,label,value,type}], modifications, geometry,
+material: Mixed (mongoose.Schema.Types.Mixed)
+  // 允许任意材质属性透传，包括 color, roughness, metalness, emissive, emissiveIntensity,
+  // opacity, alphaTest, blending, side, transparent, depthTest, depthWrite, vertexColors,
+  // wireframe, flatShading 等。旧版严格子 schema 会丢弃未声明字段。
 ```
 
 ### Asset
@@ -368,7 +372,7 @@ The HUD data binding system is implemented in the current `master` branch. Impor
 
 ### 缂栬緫鍣ㄩ泦鎴愶紙6173锛?
 **鍙充晶 HUD 缂栬緫闈㈡澘鏂板 Tab**锛?- **"缁戝畾" Tab**锛坄DataBindingEditor.vue`锛?  - 閫夋嫨缁戝畾妯″紡锛堥潤鎬?璺熼殢閫変腑/鎸囧畾瀵硅薄锛?  - 娣诲姞灞炴€ф槧灏勶紙婧愬睘鎬?鈫?鐩爣瀛楁 鈫?鍊煎彉鎹級锛涙簮灞炴€ф潵鑷?`PathSelector.vue`锛屼娇鐢?`getGroupedPaths()` 杩斿洖鐨?`{ group, paths }` 鏁扮粍缁撴瀯
-  - 澶氬瓧娈靛璞¤鎯呬紭鍏堜娇鐢?`object-info-panel` 缁勪欢锛涙瘡涓瓧娈电殑缁戝畾鐩爣褰㈠ `data.fields.0.value`锛岄€傚悎 `context-selected` 鍦烘櫙瀵硅薄淇℃伅灞曠ず銆?  - 鍦烘櫙瀵硅薄涓氬姟瀛楁淇濆瓨鍦?`object.userData.customProperties`锛屽睘鎬ч潰鏉垮彲缂栬緫锛岀粦瀹氳矾寰勪负 `custom.<key>`锛屽悗绔?`SceneObject.customProperties` 浼氭寔涔呭寲銆?  - 瀵硅薄閫夋嫨鍣ㄥ拰璺緞閫夋嫨鍣ㄤ笅鎷?  
+  - 澶氬瓧娈靛璞¤鎯呬紭鍏堜娇鐢?`object-info-panel` 缁勪欢锛涙瘡涓瓧娈电殑缁戝畾鐩爣褰㈠ `data.fields.0.value`锛岄€傚悎 `context-selected` 鍦烘櫙瀵硅薄淇℃伅灞曠ず銆?  - 鍦烘櫙瀵硅薄涓氬姟瀛楁淇濆瓨鍦?`object.userData.customProperties`锛屽睘鎬ч潰鏉垮彲缂栬緫锛岀粦瀹氳矾寰勪负 `custom.<key>`锛屽悗绔?`SceneObject.customProperties` 浼氭寔涔呭寲銆?  - 瀵硅薄閫夋嫨鍣ㄥ拰璺緞閫夋嫨鍣ㄤ笅鎷?
 - **"鍔ㄤ綔" Tab**锛坄ActionsEditor.vue`锛?  - 姣忔潯鍔ㄤ綔閰嶇疆锛氳Е鍙戝櫒 + 鍔ㄤ綔绫诲瀷 + 鐩爣妯″紡 + 鍙€夊弬鏁?  - 鏀寔澶氭潯鍔ㄤ綔閾?
 **Viewport.vue 闆嗘垚**锛?- `BindingManager` 鍦ㄥ満鏅姞杞藉悗鍒濆鍖栵紝write-back 鍚敤
 - 鐩戝惉 `hudConfig` 鍙樺寲鑷姩 `rebindAll()`
@@ -426,7 +430,7 @@ bm.validateConfig(hudConfig);       // 楠岃瘉閰嶇疆鏈夋晥鎬?```
     x: 10, y: 10, width: 20, height: 15,
     data: { title: '浣嶇疆', value: 0 },
     style: { ... },
-    
+
     // 鏂板锛氭暟鎹粦瀹氶厤缃?    dataBinding: {
       mode: 'object-id',  // static | context-selected | object-id | bound-object
       source: { objectId: 'uuid-of-cube' },
@@ -441,7 +445,7 @@ bm.validateConfig(hudConfig);       // 楠岃瘉閰嶇疆鏈夋晥鎬?```
       }],
       updatePolicy: 'event'
     },
-    
+
     // 鏂板锛氬姩浣滈厤缃?    actions: [{
       id: 'a_1',
       enabled: true,
@@ -525,12 +529,15 @@ The backend listens on `PORT=6001`. When the browser opens the Vite frontend fro
 - Imported GLB models must stay as one scene-tree object through the editor wrapper group. Do not expose or save every child mesh as a separate top-level scene object.
 - When creating a new scene, backend metadata is intentionally empty: do not seed HUD widgets from client state or previous scenes.
 - Production publish links should resolve to `/portal/scene/:slug` under the current origin.
+- `SceneObject.material` 字段已从严格子 schema 改为 `mongoose.Schema.Types.Mixed`，以保证 `emissive`、`emissiveIntensity`、`opacity`、`alphaTest`、`flatShading` 等属性能正确持久化和反序列化。旧 schema 会静默丢弃未声明字段导致 portal 渲染缺失。
+- Portal 对 `gaussian-splat-trigger` 对象施加视觉增强：`depthTest:false`、`transparent:true`、`opacity:0.85`、复制 color 到 emissive（强度 0.6）、`renderOrder:999`，确保触发对象在远距离相机视角下可见可点击。
 
 ### Gaussian Splat Integration
 
 - InteriorGS data is served through the main Express backend under `/api/gaussian-scenes`, not through a browser-facing standalone Python service.
 - `INTERIOR_GS_DATA_ROOT` points to the InteriorGS dataset. The LAN default is `/home/jr/GS_Data/InteriorGS/InteriorGS_dataset`; Docker maps this read-only to `/data/interiorgs`.
 - Only the dedicated geometry item `高斯泼溅` can bind Gaussian splats. It is saved as an octahedron with `object.userData.objectRole = "gaussian-splat-trigger"`.
+- Newly dropped Gaussian trigger octahedrons use radius `1.15`; legacy saved trigger octahedrons should be restored at least this large so they remain easy to select.
 - Gaussian trigger objects persist click actions in `object.userData.actions.onClick`. Gaussian actions use `type: "open-gaussian-viewer"` and `payload: { sceneId, title, source: "interiorgs" }`.
 - The editor Properties panel owns Gaussian association editing, but it must only show this section for `gaussian-splat-trigger` objects. Scene save/load must preserve `objectRole` and `actions` alongside `customProperties`.
 - Gaussian association selection should not auto-lock to the first dataset. The scene dropdown must remain selectable after loading; choosing any dataset should enable/update the action and clear a saved default view only when the `sceneId` actually changes.
@@ -538,6 +545,10 @@ The backend listens on `PORT=6001`. When the browser opens the Vite frontend fro
 - `payload.defaultView` stores the viewer mode plus orbit and fly camera state so reopening the same trigger restores the saved viewpoint. The modal "居中" button should prefer this saved view and fall back to automatic AABB/occupancy framing when it is absent or invalid.
 - `GaussianSplatModal.vue` embeds PlayCanvas from `src/vendor/playcanvas.mjs`; keep this vendor file in both scene-editor and portal src/vendor folders unless the viewer is moved into a shared package.
 - Editor and Portal object clicks use the existing `scene-click` flow. Unbound objects keep normal selection/object-info behavior and must not open the modal.
+- Portal may add a Sprite label to Gaussian trigger objects, but the label must be hidden by default and only shown when the camera is close to the trigger. Keep the label just above the octahedron, not high above the scene.
+- Gaussian .ply downloads should show progress in both editor and portal modals. The modal fetches the file as a stream, displays bytes/percent, then hands a local Blob URL to PlayCanvas for parsing.
+- Gaussian file streaming should keep Accept-Ranges and set long-lived cache headers for 3dgs_compressed.ply; repeated opens should benefit from browser HTTP cache where possible.
+- Do not rely only on HTTP cache for Gaussian models. The modal also stores downloaded model Blobs in browser Cache Storage (jr3d-gaussian-models-v1) and should read from it before issuing a network request.
 - Closing the Gaussian modal must destroy the PlayCanvas app, unload the gsplat asset, and remove pointer/keyboard listeners to avoid WebGL leaks and portal freezes.
 
 ### Code Change Guardrails
